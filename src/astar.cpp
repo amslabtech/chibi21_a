@@ -1,4 +1,4 @@
-#include "chibi21_a/astar.h"
+#include "astar/astar.h"
 #include <vector>
 #include <math.h>
 #include <iostream>

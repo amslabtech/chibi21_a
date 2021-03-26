@@ -9,6 +9,8 @@ Astar::Astar():private_nh("~")
     private_nh.param("wall_cost",wall_cost,{1e+10});
     private_nh.param("wall_border",wall_border,{50});
     private_nh.param("wall_thickness",wall_thickness,{4});
+    private_nh.param("landmark_set_param",landmark_set_param,{2});
+    private_nh.param("w",w,{1.0});
     sub_map= nh.subscribe("map",10,&Astar::map_callback,this);
     pub_path = nh.advertise<nav_msgs::Path>("global_path",1);
 
@@ -50,11 +52,25 @@ void Astar::set_map_parameter()
             grid_map[i][j] = prior_map.data[j*row+i];
         }
     }
+    calc_limit();
+    set_landmark();
+}
+
+void Astar::set_landmark()
+{
+    landmark_point.x = 2000;
+    landmark_point.y = 2000;
+    landmark.push_back(landmark_point);
+    landmark_point.x = 1950;
+    landmark_point.y =2050;
+    landmark.push_back(landmark_point);
+    std::cout << landmark[0].x << std::endl;
+
 }
 
 float Astar::calc_heuristic(const int& x, const int& y)
 {
-    f = w * sqrt((current.x + x - goal_node.x)*(current.x + x - goal_node.x) + (current.y + y - goal_node.y)*(current.y + y - goal_node.y)); //wは重み
+    f = w * sqrt((x - goal_node.x)*(x - goal_node.x) + (y - goal_node.y)*(y - goal_node.y)); //wは重み
     return f;
 }
 
@@ -66,18 +82,18 @@ void Astar::node_set()
         {
             if(grid_map[i][j] == 100)
             {
-                add_wall();
+                add_wall(i,j);
             }
         }
     }
 }
 
 //障害物の周囲のコストを上げる
-void Astar::add_wall()
+void Astar::add_wall(const int& x ,const int& y)
 {
-    for(int i = map_number.min_width; i< map_number.max_width;i++)
+    for(int i = x - wall_thickness; i <= x + wall_thickness;i++)
     {
-        for(int j = map_number.min_height; i<map_number.max_width;j++)
+        for(int j = y - wall_thickness; j <= y + wall_thickness;j++)
         {
             if(grid_map[i][j] != -1 && grid_map[i][j] != 100)
             {
@@ -87,13 +103,14 @@ void Astar::add_wall()
     }
 }
 
-//観測した範囲の最大値と最小を求める
+//観測した範囲の最大値と最小値を求める
 void Astar::calc_limit()
 {
     map_number.min_width = row;
     map_number.max_width = 0;
     map_number.min_height = column;
     map_number.max_height = 0;
+    std::cout << "calc_limit" << std::endl;
     for(int i = 0;i<row;i++)
     {
         for(int j = 0; j<column;j++)
@@ -124,10 +141,9 @@ void Astar::calc_limit()
 //チェックポイントまで探索したら初期化
 void Astar::clear_node()
 {
-    std::cout<< "bb"<< std::endl;
-    for(int i = map_number.min_width; i<map_number.max_width; i++)
+    for(int i = map_number.min_width; i < map_number.max_width; i++)
     {
-        for(int j = map_number.min_height; i<map_number.max_height; j++)
+        for(int j = map_number.min_height; j < map_number.max_height; j++)
         {
             close_set[i][j] = init_node;
             open_set[i][j] = init_node;
@@ -137,25 +153,30 @@ void Astar::clear_node()
 
 void Astar::define_start_node()
 {
-    current.x = landmark[checkpoint_index].x;
-    current.y = landmark[checkpoint_index].y;
+    std::cout << "define_start_node" << std::endl;
+    current.x = landmark[0].x;
+    current.y = landmark[0].y;
+    start_node.g = 0;
+    start_node.f = 0;
+    start_node.parent_x = -1;
+    start_node.parent_y = -1;
+    open_set[current.x][current.y] = start_node;
 }
 
 void Astar::define_goal_node()
 {
-    goal_node.x = landmark[checkpoint_index+1].x;
-    goal_node.y = landmark[checkpoint_index+1].y;
+    goal_node.x = landmark[1].x;
+    goal_node.y = landmark[1].y;
 }
 
 void Astar::open_node()
 {
-    for(int i=0;i<9;i++)
+    for(int i=0;i<8;i++)
     {
         x = (int)motion[i][0];
         y = (int)motion[i][1];
         g = motion[i][2];
-
-        next_g =open_set[current.x + x][current.y + y].g + g;
+        next_g =open_set[current.x][current.y].g + g;
         next_f = next_g + calc_heuristic(current.x + x,current.y + y);
 
         //ノードが適切か調べる
@@ -206,7 +227,6 @@ void Astar::update_close_set()
     close_set[current.x][current.y].f = open_set[current.x][current.y].f;
     close_set[current.x][current.y].parent_x = current.x;
     close_set[current.x][current.y].parent_y = current.y;*/
-
     close_set[current.x][current.y] = current_node;
     //ノードの初期化
     open_set[current.x][current.y] = init_node;
@@ -232,6 +252,8 @@ void Astar::update_current_node()
             }
         }
     }
+    std::cout << "current.x" << current.x << std::endl;
+    std::cout << "current.y" << current.y << std::endl;
 }
 
 void Astar::check_goal_node()
@@ -261,6 +283,7 @@ void Astar::trace_path()
     add_path_point(goal_node.x,goal_node.y);
     tracing_node.x = open_set[goal_node.x][goal_node.y].parent_x;
     tracing_node.y = open_set[goal_node.x][goal_node.y].parent_y;
+    std::cout << "tracing_node" << tracing_node.x << std::endl;
     while(!complete)
     {
         add_path_point(tracing_node.x,tracing_node.y);
@@ -273,18 +296,19 @@ void Astar::trace_path()
             add_path_point(tracing_node.x,tracing_node.y);
             complete = true;
         }
+
     }
+
     //ゴールから入れているので逆転させる
     std::reverse(checkpoint_path.poses.begin(),checkpoint_path.poses.end());
+
 }
 //チェックポイントまでの最適パスを探す
 void Astar::checkpoint_path_creator()
 {
     checkpoint_path.poses.clear();
-    clear_node();//nodeの初期化
     define_start_node();
     define_goal_node();
-
     //探索
     while(!reach_goal)
     {
@@ -292,32 +316,31 @@ void Astar::checkpoint_path_creator()
         {
             std::cout << "Open set is empty .." << std::endl;
         }
-
         //open_setの中から最もコストが小さいnodeを選ぶ
         for(int i = map_number.min_width; i<map_number.max_width; i++)
         {
-            for(int j = map_number.min_height; i<map_number.max_height; j++)
+            for(int j = map_number.min_height; j<map_number.max_height; j++)
             {
-                 now_f = open_set[i][j].f + calc_heuristic(open_set[i][j].x,open_set[i][j].y);
-                if(now_f < old_f)
+                //minの初期化忘れでバク、注意!!
+                if(open_set[i][j].f< min)
                 {
-                    current_node = open_set[i][j];
+                    min = open_set[i][j].f;
+                    current_node.f = open_set[i][j].f;
+                    current_node.g = open_set[i][j].g;
+                    current_node.parent_x = i;
+                    current_node.parent_y = j;
                     //close_set.push_back(node);
-                }
-                else
-                {
-                    old_f = now_f;
-                }
 
+                }
             }
         }
-
+        min = wall_cost;
+        open_node();//open_node()をupdate_current_node移行に実行しないで
         update_close_set();
-        //次のnodeを展開する
-        open_node();
         update_current_node();
         check_goal_node();
     }
+    clear_node();
     trace_path();
 }
 
@@ -327,8 +350,7 @@ void Astar::planning()
     //nodeの初期設定
     node_set();
 
-
-    for(int i = 0; i<2; i++)
+    for(int i = 0; i<1; i++)
     {
         if(open_set.size() == 0)
         {
@@ -336,9 +358,9 @@ void Astar::planning()
         }
         checkpoint_path_creator();
         //checkpoint_path_createrで作ったパスをglobal_pathにくっつける
-        global_path.poses.insert(global_path.poses.end(),checkpoint_path.poses.begin(),checkpoint_path.poses.end());
+        //global_path.poses.insert(global_path.poses.end(),checkpoint_path.poses.begin(),checkpoint_path.poses.end());
 
-        if(i == 2)
+        if(i == 0)
         {
             std::cout << "global_path  created!" << std::endl;
         }

@@ -37,6 +37,7 @@ public:
     void process();
 
 private:
+    void test(); //パスを表示するための関数　テスト用
     void map_callback(const nav_msgs::OccupancyGrid::ConstPtr &);
     void set_map_parameter();
     void calc_final_path();
@@ -93,6 +94,7 @@ private:
     Coordinate medium_value;
     Map_number map_number;
     int hz;
+    int count = 0;
     int x = 0;
     int y = 0;
     int g = 0;

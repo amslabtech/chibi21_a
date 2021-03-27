@@ -94,7 +94,6 @@ private:
     Coordinate medium_value;
     Map_number map_number;
     int hz;
-    int count = 0;
     int x = 0;
     int y = 0;
     int g = 0;

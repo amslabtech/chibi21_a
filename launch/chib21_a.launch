@@ -5,6 +5,8 @@
         <param name="wall_cost" value="1e+10" />
         <param name="wall_border" value="50" />
         <param name="wall_thickness" value="4" />
+        <param name="landmark_set_param" value="2" />
+        <param name="w" value="1.0" />
     </node>
     <arg name="map_file" default="$(find chibi21_a)/map/Dmap1.yaml" />
     <node name="map_server" pkg="map_server" type="map_server" args="$(arg map_file)" output="screen" />

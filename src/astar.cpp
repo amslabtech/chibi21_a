@@ -68,6 +68,8 @@ void Astar::set_landmark()
     landmark_point.x = 1970;
     landmark_point.y =2040;
     landmark.push_back(landmark_point);
+    landmark_point.x = 1950;
+    landmark_point.y = 2060;
     std::cout << landmark[0].x << std::endl;
 
 }
@@ -287,26 +289,16 @@ void Astar::trace_path()
     add_path_point(goal_node.x,goal_node.y);
     tracing_node.x = close_set[goal_node.x][goal_node.y].parent_x;
     tracing_node.y = close_set[goal_node.x][goal_node.y].parent_y;
-    std::cout << "trace_pathの最初" << close_set[goal_node.x][goal_node.y].parent_x << "," << tracing_node.y << std::endl;
     while(!complete){
         add_path_point(tracing_node.x,tracing_node.y);
-        std::cout << "tracing_node" << tracing_node.x << std::endl;
         reminder.x = tracing_node.x;
         reminder.y = tracing_node.y;
         tracing_node.x = close_set[reminder.x][reminder.y].parent_x;
         tracing_node.y = close_set[reminder.x][reminder.y].parent_y;
-        std::cout <<"a" << tracing_node.x << "," << tracing_node.y <<std::endl;
-        /*std::cout << "count" << count <<std::endl;
-        if(count == 20)
-        {
-            break;
-        }
-        count++;*/
         if(tracing_node.x == -1 && tracing_node.y == -1)
         {
             //add_path_point(tracing_node.x,tracing_node.y);
             complete = true;
-            std::cout<< "end" <<std::endl;
         }
     }
 
@@ -362,8 +354,7 @@ void Astar::planning()
     clear_node();
     //nodeの初期設定
     node_set();
-
-    for(int i = 0; i<1; i++)
+    for(int i = 0; i<landmark_set_param; i++)
     {
         if(open_set.size() == 0)
         {
@@ -372,12 +363,9 @@ void Astar::planning()
         checkpoint_path_creator();
         //checkpoint_path_createrで作ったパスをglobal_pathにくっつける
         global_path.poses.insert(global_path.poses.end(),checkpoint_path.poses.begin(),checkpoint_path.poses.end());
-
-        if(i == 0)
-        {
-            std::cout << "global_path  created!" << std::endl;
-        }
     }
+
+    std::cout << "global_path  created!" << std::endl;
     pub_path.publish(global_path);//Pathをpublishする
 }
 

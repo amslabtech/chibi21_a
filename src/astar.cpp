@@ -9,7 +9,7 @@ Astar::Astar():private_nh("~")
     private_nh.param("wall_cost",wall_cost,{1e+10});
     private_nh.param("wall_border",wall_border,{50});
     private_nh.param("wall_thickness",wall_thickness,{4});
-    private_nh.param("landmark_set_param",landmark_set_param,{2});
+    private_nh.param("landmark_set_param",landmark_set_param,{1});
     private_nh.param("w",w,{1.0});
     sub_map= nh.subscribe("map",10,&Astar::map_callback,this);
     pub_path = nh.advertise<nav_msgs::Path>("global_path",1);//local goal creatorへ送る
@@ -59,14 +59,14 @@ void Astar::set_landmark()
     landmark_point.x = 2000;
     landmark_point.y = 2000;
     landmark.push_back(landmark_point);
-    landmark_point.x = 1980;
-    landmark_point.y =2020;
-    landmark.push_back(landmark_point);
-    landmark_point.x = 1980;
-    landmark_point.y = 2000;
-    landmark.push_back(landmark_point);
     landmark_point.x = 1960;
-    landmark_point.y = 2000;
+    landmark_point.y =2010;
+    landmark.push_back(landmark_point);
+    landmark_point.x = 1980;
+    landmark_point.y = 2080;
+    landmark.push_back(landmark_point);
+    landmark_point.x = 1980;
+    landmark_point.y = 2080;
     landmark.push_back(landmark_point);
 }
 
@@ -276,7 +276,7 @@ void Astar::add_path_point(const int& x,const int& y)
 
 void Astar::trace_path()
 {
-   // complete = false;//test用のためコメントアウト
+   // complete = false;
     add_path_point(goal_node.x,goal_node.y);
     tracing_node.x = close_set[goal_node.x][goal_node.y].parent_x;
     tracing_node.y = close_set[goal_node.x][goal_node.y].parent_y;
@@ -343,12 +343,11 @@ void Astar::checkpoint_path_creator()
     reach_goal = false;
     trace_path();
     clear_node();
-    if(check_point_index <3)
+    if(check_point_index <= landmark_set_param)
     {
 	 complete = false;
     }
     check_point_index++;
-
 }
 
 void Astar::planning()
@@ -356,7 +355,7 @@ void Astar::planning()
     clear_node();
     //nodeの初期設定
     node_set();
-    for(int i = 0; i<2; i++)
+    for(int i = 0; i<landmark_set_param; i++)
     {
         if(open_set.size() == 0)
         {

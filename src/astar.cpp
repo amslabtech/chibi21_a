@@ -13,7 +13,6 @@ Astar::Astar():private_nh("~")
     private_nh.param("w",w,{1.0});
     sub_map= nh.subscribe("map",10,&Astar::map_callback,this);
     pub_path = nh.advertise<nav_msgs::Path>("global_path",1);//local goal creatorへ送る
-
 }
 
 void Astar::map_callback(const nav_msgs::OccupancyGrid::ConstPtr &msg)
@@ -55,23 +54,20 @@ void Astar::set_map_parameter()
     set_landmark();
 }
 
-void Astar::test()
-{
-
-}
-
 void Astar::set_landmark()
 {
     landmark_point.x = 2000;
     landmark_point.y = 2000;
     landmark.push_back(landmark_point);
-    landmark_point.x = 1970;
-    landmark_point.y =2040;
+    landmark_point.x = 1980;
+    landmark_point.y =2020;
     landmark.push_back(landmark_point);
-    landmark_point.x = 1950;
-    landmark_point.y = 2060;
-    std::cout << landmark[0].x << std::endl;
-
+    landmark_point.x = 1980;
+    landmark_point.y = 2000;
+    landmark.push_back(landmark_point);
+    landmark_point.x = 1960;
+    landmark_point.y = 2000;
+    landmark.push_back(landmark_point);
 }
 
 float Astar::calc_heuristic(const int& x, const int& y)
@@ -116,7 +112,6 @@ void Astar::calc_limit()
     map_number.max_width = 0;
     map_number.min_height = column;
     map_number.max_height = 0;
-    std::cout << "calc_limit" << std::endl;
     for(int i = 0;i<row;i++)
     {
         for(int j = 0; j<column;j++)
@@ -160,8 +155,8 @@ void Astar::clear_node()
 void Astar::define_start_node()
 {
     std::cout << "define_start_node" << std::endl;
-    current.x = landmark[0].x;
-    current.y = landmark[0].y;
+    current.x = landmark[check_point_index].x;
+    current.y = landmark[check_point_index].y;
     start_node.g = 0;
     start_node.f = 0;
     start_node.parent_x = -1;
@@ -171,8 +166,8 @@ void Astar::define_start_node()
 
 void Astar::define_goal_node()
 {
-    goal_node.x = landmark[1].x;
-    goal_node.y = landmark[1].y;
+    goal_node.x = landmark[check_point_index+1].x;
+    goal_node.y = landmark[check_point_index+1].y;
 }
 
 void Astar::open_node()
@@ -235,7 +230,6 @@ void Astar::update_close_set()
     close_set[current.x][current.y].parent_x = current.x;
     close_set[current.x][current.y].parent_y = current.y;*/
     close_set[current.x][current.y] = current_node;
-std::cout << "close_set parent"<<current.x<<","<<current.y<<","<<close_set[current.x][current.y].parent_x << std::endl;
     //ノードの初期化
     open_set[current.x][current.y] = init_node;
 }
@@ -254,7 +248,6 @@ void Astar::update_current_node()
                 next_node.f = open_set[i][j].f;
                 current.x = i;
                 current.y = j;
-               //next_node.parent_y = j;
             }
         }
     }
@@ -278,14 +271,12 @@ void Astar::add_path_point(const int& x,const int& y)
     geometry_msgs::PoseStamped path_point;
     path_point.pose.position.x = ((double)((x - medium_value.x)*resolution));
     path_point.pose.position.y = ((double)((y - medium_value.y)*resolution));
-    std::cout << "path_x" << path_point.pose.position.x << std::endl;
-    std::cout << "path_y" << path_point.pose.position.y << std::endl;
     checkpoint_path.poses.push_back(path_point);
 }
 
 void Astar::trace_path()
 {
-    //complete = false;//test用のためコメントアウト
+   // complete = false;//test用のためコメントアウト
     add_path_point(goal_node.x,goal_node.y);
     tracing_node.x = close_set[goal_node.x][goal_node.y].parent_x;
     tracing_node.y = close_set[goal_node.x][goal_node.y].parent_y;
@@ -297,16 +288,23 @@ void Astar::trace_path()
         tracing_node.y = close_set[reminder.x][reminder.y].parent_y;
         if(tracing_node.x == -1 && tracing_node.y == -1)
         {
-            //add_path_point(tracing_node.x,tracing_node.y);
             complete = true;
         }
     }
 
     //ゴールから入れているので逆転させる
     std::reverse(checkpoint_path.poses.begin(),checkpoint_path.poses.end());
-
-
+      
 }
+
+void Astar::show_path()
+{
+    for(auto& i : checkpoint_path.poses)
+    {
+	 std::cout <<"checkpoint_path.poses" << i << std::endl;
+     } 
+}
+
 //チェックポイントまでの最適パスを探す
 void Astar::checkpoint_path_creator()
 {
@@ -333,8 +331,6 @@ void Astar::checkpoint_path_creator()
                     current_node.g = open_set[i][j].g;
                     current_node.parent_x = open_set[i][j].parent_x;
                     current_node.parent_y = open_set[i][j].parent_y;
-                    //std::cout << "current_node.parent_x" << i << std::endl;
-                    //close_set.push_back(node);
                 }
             }
         }
@@ -343,10 +339,16 @@ void Astar::checkpoint_path_creator()
         update_close_set();
         check_goal_node();
         update_current_node();
-        //check_goal_node();
     }
+    reach_goal = false;
     trace_path();
     clear_node();
+    if(check_point_index <3)
+    {
+	 complete = false;
+    }
+    check_point_index++;
+
 }
 
 void Astar::planning()
@@ -354,7 +356,7 @@ void Astar::planning()
     clear_node();
     //nodeの初期設定
     node_set();
-    for(int i = 0; i<landmark_set_param; i++)
+    for(int i = 0; i<2; i++)
     {
         if(open_set.size() == 0)
         {
@@ -364,9 +366,11 @@ void Astar::planning()
         //checkpoint_path_createrで作ったパスをglobal_pathにくっつける
         global_path.poses.insert(global_path.poses.end(),checkpoint_path.poses.begin(),checkpoint_path.poses.end());
     }
-
+    reach_final_goal =true;
+    //To verify the path
+    show_path();
     std::cout << "global_path  created!" << std::endl;
-    pub_path.publish(global_path);//Pathをpublishする
+   // pub_path.publish(global_path);
 }
 
 
@@ -377,10 +381,10 @@ void Astar::process()
 
     while(ros::ok())
     {
-        if(set_map_checker) planning();
+        if(set_map_checker && !reach_final_goal) planning();
+	pub_path.publish(global_path);
         ros::spinOnce();
         loop_rate.sleep();
-
     }
 }
 

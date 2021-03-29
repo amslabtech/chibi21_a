@@ -294,7 +294,7 @@ void Astar::trace_path()
 
     //ゴールから入れているので逆転させる
     std::reverse(checkpoint_path.poses.begin(),checkpoint_path.poses.end());
-      
+
 }
 
 void Astar::show_path()
@@ -302,7 +302,7 @@ void Astar::show_path()
     for(auto& i : checkpoint_path.poses)
     {
 	 std::cout <<"checkpoint_path.poses" << i << std::endl;
-     } 
+     }
 }
 
 //チェックポイントまでの最適パスを探す

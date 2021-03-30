@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<launch>
+    <arg name="map_file" default="$(find chibi21_a)/Dmap1.yaml"/>
+    <node pkg="map_server" name="map_server" type="map_server" args="$(arg map_file)" output="screen"/>
+    <node pkg="chibi21_a" name="chibi21_a_amcl" type="chibi21_a_amcl" output="screen">
+        <param name="hz" value="10" type="int"/>
+        <param name="N" value="100" type="int"/>
+        <param name="INIT_X" value="0.0" type="double"/>
+        <param name="INIT_Y" value="0.0" type="double"/>
+        <param name="INIT_YAW" value="0.0" type="double"/>
+        <param name="INIT_X_COV" value="1.0" type="double"/>
+        <param name="INIT_Y_COV" value="1.0" type="double"/>
+        <param name="INIT_YAW_COV" value="1.0" type="double"/>
+    </node>
+</launch>

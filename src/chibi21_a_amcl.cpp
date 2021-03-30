@@ -23,10 +23,10 @@ Particle::Particle():private_nh("~")
     sub_map = nh.subscribe("/map",100,&Particle::map_callback,this);
 
     //publisher
-    pub_estimated_pose = nh.advertise<geometry_msgs::PoseStamped>("estimated_pose",100);
-    pub_p_poses = nh.advertise<geometry_msgs::PoseArray>("p_poses",100);
+    pub_estimated_pose = nh.advertise<geometry_msgs::PoseStamped>("estimated_pose",1);
+    pub_p_poses = nh.advertise<geometry_msgs::PoseArray>("p_poses",1);
 
-    pose.header.frame_id = "map";
+    poses.header.frame_id = "map";
 
     pose.pose.position.x = 0.0;
     pose.pose.position.y = 0.0;

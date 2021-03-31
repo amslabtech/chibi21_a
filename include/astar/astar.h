@@ -4,14 +4,13 @@
 #include <nav_msgs/OccupancyGrid.h>
 #include <nav_msgs/Path.h>
 #include <geometry_msgs/PoseStamped.h>
+#include <geometry_msgs/PointStamped.h>
 #include <vector>
 
 struct Node
 {
     float g;
     float f;
-    int x;
-    int y;
     int parent_x;
     int parent_y;
 };
@@ -38,6 +37,8 @@ public:
 
 private:
     void show_path(); //パスを表示するための関数　テスト用
+    void show_open_set();
+    void show_close_set(const int& x,const int& y);
     void map_callback(const nav_msgs::OccupancyGrid::ConstPtr &);
     void set_map_parameter();
     void calc_final_path();
@@ -82,7 +83,8 @@ private:
     };
     std::vector< std::vector<int> > grid_map;
     Node start_node;
-    Node goal_node;
+    Coordinate goal_index;
+    Coordinate start_index;
     Node init_node;
     Node next_node;
     Node current_node;
@@ -100,7 +102,7 @@ private:
     bool test_goal =false;
     int x = 0;
     int y = 0;
-    int g = 0;
+    float g = 0;
     int row = 0;
     int wall_border = 0;
     int column = 0;
@@ -118,6 +120,8 @@ private:
     ros::NodeHandle nh;
     ros::NodeHandle private_nh;
     ros::Publisher pub_path;
+    ros::Publisher pub_open_set;
+    ros::Publisher pub_close_set;
     ros::Subscriber sub_map;
 };
 

@@ -296,7 +296,6 @@ void Astar::add_path_point(const int& x,const int& y)
 
 void Astar::trace_path()
 {
-   // complete = false;
     add_path_point(goal_index.x,goal_index.y);
     tracing_node.x = close_set[goal_index.x][goal_index.y].parent_x;
     tracing_node.y = close_set[goal_index.x][goal_index.y].parent_y;
@@ -390,7 +389,6 @@ void Astar::planning()
     //To verify the path
     show_path();
     std::cout << "global_path  created!" << std::endl;
-   // pub_path.publish(global_path);
 }
 
 

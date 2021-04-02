@@ -33,6 +33,8 @@ class Particle
         void map_callback(const nav_msgs::OccupancyGrid::ConstPtr &msg);
 
         void p_init(double x, double y, double yaw, double cov_x, double cov_y, double cov_yaw);
+        void p_motion_update();
+        void p_move();
 
         //parameter
         int N;
@@ -59,6 +61,11 @@ class Particle
         geometry_msgs::PoseStamped current_pose;
         geometry_msgs::PoseStamped previous_pose;
         geometry_msgs::PoseArray poses;
+
+        nav_msgs::Odometry current_odo;
+        nav_msgs::Odometry previous_odo;
+
+        std::vector<Particle> particles;
 
         nav_msgs::Odometry odometry;
         sensor_msgs::LaserScan laserscan;

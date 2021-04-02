@@ -58,7 +58,7 @@ void Particle::map_callback(const nav_msgs::OccupancyGrid::ConstPtr &msg)
         poses.poses.push_back(p.pose.pose);
         init_particles.push_back(p);
     }
-
+    particles = init_particles;
 }
 
 //Particle 初期化
@@ -73,6 +73,39 @@ void Particle::p_init(double x, double y, double yaw, double cov_x, double cov_y
     std::normal_distribution<> dist_yaw(yaw,cov_yaw);
     quaternionTFToMsg(tf::createQuaternionFromYaw(dist_yaw(engine)),pose.pose.orientation);
 }
+
+void Particle::p_motion_update()
+{
+    for(int i = 0; i < N; i++)
+    {
+        particles[i].p_move();
+    }
+    previous_odo = current_odo;
+}
+
+void Particle::p_move()
+{
+    tf::Point p_position;
+    tf::Point current_position;
+    tf::Point previous_position;
+    tf::Quaternion p_orientation;
+    tf::Quaternion current_orientation;
+    tf::Quaternion previous_orientation;
+
+    //計算のためgeometry_msgsからtfへ変換
+    pointMsgToTF(pose.pose.position, p_position);
+    pointMsgToTF(current_odo.pose.pose.position, current_position);
+    pointMsgToTF(previous_odo.pose.pose.position, previous_position);
+    quaternionMsgToTF(pose.pose.orientation, p_orientation);
+    quaternionMsgToTF(current_odo.pose.pose.orientation, current_orientation);
+    quaternionMsgToTF(previous_odo.pose.pose.orientation, previous_orientation);
+
+    tf::Quaternion d_orientation = current_orientation * previous_orientation.inverse();
+
+    pointTFToMsg(p_position+current_position-previous_position, pose.pose.position);
+    quaternionTFToMsg(p_orientation*d_orientation, pose.pose.orientation);
+}
+
 
 void Particle::process()
 {

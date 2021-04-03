@@ -14,7 +14,9 @@ public:
 private:
     void scan_callback(const sensor_msgs::LaserScan::ConstPtr &);
     void create_local_map();
+    void set_grid_map(const int& set_value);
     int hz = 0;
+    int set_value = 0;
     int world = 0;
     int row = 0;
     int column = 0;

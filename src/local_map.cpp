@@ -9,6 +9,7 @@ Local_map::Local_map():private_nh("~")
 {
     private_nh.param("hz",hz,{1});
     private_nh.param("world",world,{5});
+    private_nh.param("degree",degree,{5});
     sub_scan = nh.subscribe("scan",10,&Local_map::scan_callback,this);
     pub_local_map = nh.advertise<nav_msgs::Path>("local_map",1);
 }
@@ -17,6 +18,17 @@ void Local_map::scan_callback(const sensor_msgs::LaserScan::ConstPtr &msg)
 {
     laserscan = *msg;
     create_local_map();
+}
+
+void Local_map::set_grid_map(const int& set_value)
+{
+    grid_map[row/2 + (int)(observation_radius*std::sin(theta)/resoution)][column/2 + (int)(observation_radius*std::cos(theta)/resoution)] = set_value;
+    for(float j=0 ;j<observation_radius; j+=resoution)
+    {
+        /*if(j <= roomba_radius) grid_map[row/2 +(int)((j*std::sin(theta))/resoution)][column/2 + (int)((j*std::cos(theta))/resoution)] = -1;*/
+
+        grid_map[row/2 +(int)((j*std::sin(theta))/resoution)][column/2 + (int)((j*std::cos(theta))/resoution)] = 0;
+    }
 }
 
 void Local_map::create_local_map()
@@ -36,15 +48,19 @@ void Local_map::create_local_map()
     {
         observation_radius = laserscan.ranges[i];
         theta = (i-540)*angle_increment;
-        grid_map[row/2 + (int)(observation_radius*std::sin(theta)/resoution)][column/2 + (int)(observation_radius*std::cos(theta)/resoution)] = 100;
 
-        for(float j=0 ; j<observation_radius; j+=resoution)
+        if(observation_radius > roomba_radius)
         {
-            /*if(j <= roomba_radius) grid_map[row/2 +(int)((j*std::sin(theta))/resoution)][column/2 + (int)((j*std::cos(theta))/resoution)] = -1;*/
-
-            grid_map[row/2 +(int)((j*std::sin(theta))/resoution)][column/2 + (int)((j*std::cos(theta))/resoution)] = 0;
+            set_value = 100;
+            set_grid_map(set_value);
+        }
+        else
+        {
+            set_value = 0;
+            set_grid_map(set_value);
         }
     }
+
     nav_msgs::OccupancyGrid local_map;
     local_map.header.frame_id ="map";
     for(int i = 0; i<row ;i++)

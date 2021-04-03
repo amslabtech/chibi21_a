@@ -136,7 +136,7 @@ include
 ## The recommended prefix ensures that target names across packages don't collide
 add_executable(astar src/astar.cpp)
 add_executable(local_goal_creator src/local_goal_creator.cpp)
-add_executable(map_manager src/map_manager.cpp)
+add_executable(local_map src/local_map.cpp)
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
 ## target back to the shorter version for ease of user use
@@ -147,11 +147,11 @@ add_executable(map_manager src/map_manager.cpp)
 ## same as for the library above
 add_dependencies(astar ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(local_goal_creator ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-add_dependencies(map_manager ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(local_map ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 ## Specify libraries to link a library or executable target against
 target_link_libraries(astar ${catkin_LIBRARIES})
 target_link_libraries(local_goal_creator ${catkin_LIBRARIES})
-target_link_libraries(map_manager ${catkin_LIBRARIES})
+target_link_libraries(local_map ${catkin_LIBRARIES})
 
 #############
 ## Install ##

@@ -6,7 +6,6 @@
         <param name="wall_border" value="50" />
         <param name="wall_thickness" value="4" />
         <param name="landmark_set_param" value="9" />
-        <param name="w" value="1" />
     </node>
     <node pkg="rviz" type="rviz" name="rviz" args="-d $(find chibi21_a)/config/simulate_a.rviz"/>
     <arg name="map_file" default="$(find chibi21_a)/map/Dmap1.yaml" />

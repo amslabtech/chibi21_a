@@ -42,7 +42,6 @@ private:
     void map_callback(const nav_msgs::OccupancyGrid::ConstPtr &);
     void set_map_parameter();
     void calc_final_path();
-    float clac_heuristic(const int&,const int&);
     void clear_node();
     void clear_close_set(const int& x,const int& y);
     void check_goal_node();
@@ -96,7 +95,6 @@ private:
     Coordinate medium_value;
     Map_number map_number;
     int hz;
-    int count = 0;
     int check_point_index = 0;
     bool reach_final_goal = false;
     bool test_goal =false;
@@ -121,7 +119,6 @@ private:
     ros::NodeHandle private_nh;
     ros::Publisher pub_path;
     ros::Publisher pub_open_set;
-    ros::Publisher pub_close_set;
     ros::Subscriber sub_map;
 };
 

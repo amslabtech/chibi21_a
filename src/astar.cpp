@@ -10,11 +10,9 @@ Astar::Astar():private_nh("~")
     private_nh.param("wall_border",wall_border,{50});
     private_nh.param("wall_thickness",wall_thickness,{4});
     private_nh.param("landmark_set_param",landmark_set_param,{1});
-    private_nh.param("w",w,{1.0});
     sub_map= nh.subscribe("map",10,&Astar::map_callback,this);
     pub_path = nh.advertise<nav_msgs::Path>("global_path",1);//local goal creatorへ送る
     pub_open_set = nh.advertise<geometry_msgs::PointStamped>("open_set_rviz",1);//rviz配信用
-    pub_close_set = nh.advertise<geometry_msgs::PointStamped>("close_set_rviz",1);
 }
 
 void Astar::map_callback(const nav_msgs::OccupancyGrid::ConstPtr &msg)
@@ -71,13 +69,12 @@ void Astar::show_close_set(const int& x,const int& y)
     set.header.frame_id = "map";
     set.point.x = ((double)((current.x - medium_value.x) *resolution));
     set.point.y = ((double)((current.y - medium_value.y)*resolution));
-    pub_close_set.publish(set);
 }
 
 void Astar::set_landmark()
 {
-    landmark_point.x = 1800;
-    landmark_point.y = 2100;
+    landmark_point.x = 1798;
+    landmark_point.y = 2150;
     landmark.push_back(landmark_point);
     landmark_point.x = 1800;
     landmark_point.y =1880;
@@ -111,7 +108,7 @@ void Astar::set_landmark()
 
 float Astar::calc_heuristic(const int& x, const int& y)
 {
-    f = w * sqrt((x - goal_index.x)*(x - goal_index.x) + (y - goal_index.y)*(y - goal_index.y)); //wは重み
+    f = sqrt((x - goal_index.x)*(x - goal_index.x) + (y - goal_index.y)*(y - goal_index.y));
     return f;
 }
 
@@ -204,13 +201,11 @@ void Astar::define_goal_node()
 {
     goal_index.x = landmark[check_point_index+1].x;
     goal_index.y = landmark[check_point_index+1].y;
-    start_node.g = 0;
+    start_node.g = 0.0;
     start_node.f = calc_heuristic(current.x,current.y);
-    start_node.parent_x = -1;
-    start_node.parent_y = -1;
+    start_node.f = -1;
+    start_node.g = -1;
     open_set[current.x][current.y] = start_node;
-    current_node = start_node;
-
 }
 
 void Astar::open_node()
@@ -223,28 +218,28 @@ void Astar::open_node()
         next_g = open_set[current.x][current.y].g + g;
         next_f = next_g + calc_heuristic(current.x + x,current.y + y);
 
+
         //ノードが適切か調べる
         if(open_set[current.x + x][current.y + y].f < wall_cost)
         {
             if(open_set[current.x+ x][current.y+ y].f > next_f)
             {
                 update_open_set(x,y);
-                continue;
             }
         }
         else
         {
-
-            update_open_set(x,y);
-            continue;
-        }
-
-        if(close_set[current.x + x][current.y + y].f < wall_cost)
-        {
-            if(next_f <close_set[current.x + x][current.y + y].f)
+            if(close_set[current.x + x][current.y + y].f <wall_cost)
+            {
+                if(next_f <close_set[current.x + x][current.y + y].f )
+                {
+                    update_open_set(x,y);
+                    clear_close_set(x,y);
+                }
+            }
+            else
             {
                 update_open_set(x,y);
-                clear_close_set(x,y);
             }
         }
     }
@@ -260,7 +255,6 @@ void Astar::update_open_set(const int& x,const int& y)
     open_set[current.x + x][current.y + y].f = next_f;
     open_set[current.x + x][current.y + y].parent_x = current.x;
     open_set[current.x + x][current.y + y].parent_y = current.y;
-    show_open_set();
 }
 
 void Astar::clear_close_set(const int& x,const int& y)
@@ -270,7 +264,10 @@ void Astar::clear_close_set(const int& x,const int& y)
 
 void Astar::update_close_set()
 {
-    close_set[current.x][current.y] = current_node;
+    close_set[current.x][current.y].g = open_set[current.x][current.y].g;
+    close_set[current.x][current.y].f = open_set[current.x][current.y].f;
+    close_set[current.x][current.y].parent_x = open_set[current.x][current.y].parent_x;
+    close_set[current.x][current.y].parent_y = open_set[current.x][current.y].parent_y;
     //ノードの初期化
     show_close_set(current.x,current.y);
     open_set[current.x][current.y] = init_node;
@@ -318,10 +315,10 @@ void Astar::trace_path()
 
 void Astar::show_path()
 {
-    for(auto& i : checkpoint_path.poses)
+    for(auto& i : global_path.poses)
     {
-	 std::cout <<"checkpoint_path.poses" << i << std::endl;
-     }
+	 std::cout <<"global_path.poses" << i.pose.position.x <<","<<i.pose.position.y<< std::endl;
+    }
 }
 
 //チェックポイントまでの最適パスを探す
@@ -334,31 +331,26 @@ void Astar::checkpoint_path_creator()
     //探索
     while(!reach_goal)
     {
-        if(open_set.size() == 0)
-        {
-            std::cout << "Open set is empty .." << std::endl;
-        }
-        open_node();
+        /*open_node();
         update_close_set();
-        check_goal_node();
+        check_goal_node();*/
+        show_open_set();
         //open_setの中から最もコストが小さいnodeを選ぶ
         for(int i = map_number.min_width; i<map_number.max_width; i++)
         {
             for(int j = map_number.min_height; j<map_number.max_height; j++)
             {
-                //minの初期化忘れでバク、注意!!
                 if(open_set[i][j].f< min)
                 {
                     min = open_set[i][j].f;
-                    current_node.f = open_set[i][j].f;
-                    current_node.g = open_set[i][j].g;
-                    current_node.parent_x = open_set[i][j].parent_x;
-                    current_node.parent_y = open_set[i][j].parent_y;
                     current.x = i;
                     current.y = j;
                 }
             }
         }
+        open_node();
+        update_close_set();
+        check_goal_node();
         min = wall_cost;
     }
     reach_goal = false;
@@ -372,15 +364,10 @@ void Astar::checkpoint_path_creator()
 
 void Astar::planning()
 {
-    clear_node();
     //nodeの初期設定
     node_set();
     for(int i = 0; i<landmark_set_param; i++)
     {
-        if(open_set.size() == 0)
-        {
-            std::cout << "Open set is empty.." << std::endl;
-        }
         checkpoint_path_creator();
         //checkpoint_path_createrで作ったパスをglobal_pathにくっつける
         global_path.poses.insert(global_path.poses.end(),checkpoint_path.poses.begin(),checkpoint_path.poses.end());

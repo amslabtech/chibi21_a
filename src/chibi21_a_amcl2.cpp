@@ -1,11 +1,11 @@
-#include <chibi21_a_amcl/chibi21_a_amcl.h>
+#include <chibi21_a_amcl/chibi21_a_amcl2.h>
 //諦めてクラスを分割
 
 //乱数生成
 std::random_device seed;
 std::mt19937 engine(seed());
 
-Particle::Particle():private_nh("~")
+AMCL::AMCL():private_nh("~")
 {
     //param
     private_nh.getParam("N",N);
@@ -19,33 +19,28 @@ Particle::Particle():private_nh("~")
     private_nh.param("hz",hz,{10});
 
     //subscriber
-    sub_odometry = nh.subscribe("/roomba/odometry",10,&Particle::odometry_callback,this);
-    sub_laserscan = nh.subscribe("/scan",10,&Particle::laserscan_callback,this);
-    sub_map = nh.subscribe("/map",10,&Particle::map_callback,this);
+    sub_odometry = nh.subscribe("/roomba/odometry",10,&AMCL::odometry_callback,this);
+    sub_laserscan = nh.subscribe("/scan",10,&AMCL::laserscan_callback,this);
+    sub_map = nh.subscribe("/map",10,&AMCL::map_callback,this);
 
     //publisher
     pub_estimated_pose = nh.advertise<geometry_msgs::PoseStamped>("estimated_pose",1);
     pub_p_poses = nh.advertise<geometry_msgs::PoseArray>("p_poses",1);
 
     poses.header.frame_id = "map";
-
-    pose.pose.position.x = 0.0;
-    pose.pose.position.y = 0.0;
-    quaternionTFToMsg(tf::createQuaternionFromYaw(0),pose.pose.orientation);
-    weight = 1.0 / (double)N;
 }
 
-void Particle::odometry_callback(const nav_msgs::Odometry::ConstPtr &msg)
+void AMCL::odometry_callback(const nav_msgs::Odometry::ConstPtr &msg)
 {
     odometry = *msg;
 }
 
-void Particle::laserscan_callback(const sensor_msgs::LaserScan::ConstPtr &msg)
+void AMCL::laserscan_callback(const sensor_msgs::LaserScan::ConstPtr &msg)
 {
     laserscan = *msg;
 }
 
-void Particle::map_callback(const nav_msgs::OccupancyGrid::ConstPtr &msg)
+void AMCL::map_callback(const nav_msgs::OccupancyGrid::ConstPtr &msg)
 {
     map = *msg;
 
@@ -54,7 +49,7 @@ void Particle::map_callback(const nav_msgs::OccupancyGrid::ConstPtr &msg)
     std::vector<Particle> init_particles;
     for(int i = 0; i < N; i++)
     {
-        Particle p;
+        Particle p(N);
         p.p_init(INIT_X,INIT_Y,INIT_YAW,INIT_X_COV,INIT_Y_COV,INIT_YAW_COV);
         poses.poses.push_back(p.pose.pose);
         init_particles.push_back(p);
@@ -70,8 +65,16 @@ void Particle::map_callback(const nav_msgs::OccupancyGrid::ConstPtr &msg)
     ROS_INFO("Particles init");
 }
 
+AMCL::Particle::Particle(int N)
+{
+    pose.pose.position.x = 0.0;
+    pose.pose.position.y = 0.0;
+    quaternionTFToMsg(tf::createQuaternionFromYaw(0),pose.pose.orientation);
+    weight = 1.0 / (double)N;
+}
+
 //Particle 初期化
-void Particle::p_init(double x, double y, double yaw, double cov_x, double cov_y, double cov_yaw)
+void AMCL::Particle::p_init(double x, double y, double yaw, double cov_x, double cov_y, double cov_yaw)
 {
     std::normal_distribution<> dist_x(x,cov_x);
     pose.pose.position.x = dist_x(engine);
@@ -83,16 +86,16 @@ void Particle::p_init(double x, double y, double yaw, double cov_x, double cov_y
     quaternionTFToMsg(tf::createQuaternionFromYaw(dist_yaw(engine)),pose.pose.orientation);
 }
 
-void Particle::p_motion_update()
+void AMCL::p_motion_update()
 {
     for(int i = 0; i < N; i++)
     {
-//        particles[i].p_move();
+       particles[i].p_move(current_odo, previous_odo);
     }
     previous_odo = current_odo;
 }
 
-void Particle::p_move()
+void AMCL::Particle::p_move(nav_msgs::Odometry current_odo, nav_msgs::Odometry previous_odo)
 {
     tf::Point p_position;
     tf::Point current_position;
@@ -115,23 +118,23 @@ void Particle::p_move()
     quaternionTFToMsg(p_orientation*d_orientation, pose.pose.orientation);
 }
 
-void Particle::p_measurement_update()
+void AMCL::p_measurement_update()
 {
     for(int i = 0; i < N; i++)
     {
-//        particles[i].p_calc_weight();
+        particles[i].p_calc_weight(laserscan, map);
     }
 }
 
-void Particle::p_calc_weight()
+void AMCL::Particle::p_calc_weight(sensor_msgs::LaserScan laserscan, nav_msgs::OccupancyGrid map)
 {
     for(int i = 0; laserscan.angle_min + i*laserscan.angle_increment < laserscan.angle_max ; i++)
     {
-        double wall_range = get_wall_range(laserscan.angle_min + i*laserscan.angle_increment);
+        double wall_range = get_wall_range(laserscan.angle_min + i*laserscan.angle_increment, map);
     }
 }
 
-double Particle::get_wall_range(double angle)
+double AMCL::Particle::get_wall_range(double angle, nav_msgs::OccupancyGrid map)
 {
     //次の横線との交点を算出
     //次の縦線との交点を算出
@@ -140,7 +143,7 @@ double Particle::get_wall_range(double angle)
     return 0.0;
 }
 
-void Particle::process()
+void AMCL::process()
 {
     ros::Rate rate(hz);
     while(ros::ok())
@@ -161,7 +164,7 @@ int main(int argc,char** argv)
 {
     ros::init(argc,argv,"chibi21_a_amcl");
     ROS_INFO("Start AMCL");
-    Particle particle;
-    particle.process();
+    AMCL amcl;
+    amcl.process();
     return 0;
 }

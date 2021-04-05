@@ -24,28 +24,25 @@ class AMCL
     public:
         AMCL();
         void process();
-        geometry_msgs::PoseStamped pose;
-        double weight;
 
     private:
         class Particle
         {
             public:
-                geometry_msgs::Posestamped pose;
+                Particle(int N);
+                geometry_msgs::PoseStamped pose;
                 double weight;
 
-            private:
                 void p_init(double x, double y, double yaw, double cov_x, double cov_y, double cov_yaw);
-                void p_move();
-                void p_calc_weight();
-                double get_wall_range(double angle);
-        }
+                void p_move(nav_msgs::Odometry current_odo, nav_msgs::Odometry previous_odo);
+                void p_calc_weight(sensor_msgs::LaserScan laserscan, nav_msgs::OccupancyGrid map);
+                double get_wall_range(double angle, nav_msgs::OccupancyGrid map);
+        };
 
         void odometry_callback(const nav_msgs::Odometry::ConstPtr &msg);
         void laserscan_callback(const sensor_msgs::LaserScan::ConstPtr &msg);
         void map_callback(const nav_msgs::OccupancyGrid::ConstPtr &msg);
 
-        void p_init(double x, double y, double yaw, double cov_x, double cov_y, double cov_yaw);
         void p_motion_update();
         void p_measurement_update();
 
@@ -79,7 +76,7 @@ class AMCL
         nav_msgs::Odometry previous_odo;
 
         std::vector<Particle> particles;
-        std::vector<Particle> init_particles;
+        // std::vector<Particle> init_particles;
 
         nav_msgs::Odometry odometry;
         sensor_msgs::LaserScan laserscan;

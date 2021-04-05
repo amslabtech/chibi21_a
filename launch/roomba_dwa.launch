@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<launch>
+        <!-- <node pkg="roomba_500driver_meiji" name ="roomba_dwa_node" type = "main500"/> -->
+    <node pkg="chibi21_a" name="roomba_dwa" type="roomba_dwa" output="screen">
+        <param name="hz" value="10" />
+        <param name="dt" value="1" />
+        <param name="to_goal_gain" value="1.0" />
+        <param name="robot_distance_gain" value="1.0" />
+        <param name="speed_gain" value="1.0" />
+        <param name="predict_time" value="3.0" />
+    </node>
+    <node pkg="chibi21_a" name="local_map" type="local_map">
+        <param name="hz" value="10" />
+        <param name="world" value="5" />
+        <param name="degree" value="5" />
+    </node>
+    <node pkg="rviz" type="rviz" name="rviz" args="-d $(find chibi21_a)/config/simulate_dwa.rviz" />
+</launch>

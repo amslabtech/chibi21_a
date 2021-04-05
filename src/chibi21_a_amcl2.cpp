@@ -1,4 +1,5 @@
 #include <chibi21_a_amcl/chibi21_a_amcl.h>
+//諦めてクラスを分割
 
 //乱数生成
 std::random_device seed;

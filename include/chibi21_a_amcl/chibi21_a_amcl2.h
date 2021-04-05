@@ -1,5 +1,5 @@
-#ifndef CHIBI21_A_AMCL_H
-#define CHIBI21_A_AMCL_H
+#ifndef CHIBI21_A_AMCL2_H
+#define CHIBI21_A_AMCL2_H
 
 #include <ros/ros.h>
 #include <sensor_msgs/LaserScan.h>
@@ -19,25 +19,35 @@
 #include <vector>
 #include <iostream>
 
-class Particle
+class AMCL
 {
     public:
-        Particle();
+        AMCL();
         void process();
         geometry_msgs::PoseStamped pose;
         double weight;
 
     private:
+        class Particle
+        {
+            public:
+                geometry_msgs::Posestamped pose;
+                double weight;
+
+            private:
+                void p_init(double x, double y, double yaw, double cov_x, double cov_y, double cov_yaw);
+                void p_move();
+                void p_calc_weight();
+                double get_wall_range(double angle);
+        }
+
         void odometry_callback(const nav_msgs::Odometry::ConstPtr &msg);
         void laserscan_callback(const sensor_msgs::LaserScan::ConstPtr &msg);
         void map_callback(const nav_msgs::OccupancyGrid::ConstPtr &msg);
 
         void p_init(double x, double y, double yaw, double cov_x, double cov_y, double cov_yaw);
         void p_motion_update();
-        void p_move();
         void p_measurement_update();
-        void p_calc_weight();
-        double get_wall_range(double angle);
 
         //parameter
         int N;

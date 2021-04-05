@@ -26,7 +26,7 @@ private:
     float roomba_radius = 0.3;//ルンバの半径 30cm
     float observation_radius = 0;
     float degree = 0;
-    float resoution = 0.05; //5cm
+    float resolution = 0.05; //5cm
     float radius = 0;
     float theta = 0;
     float angle_min =0;

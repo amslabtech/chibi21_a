@@ -11,30 +11,33 @@ Local_map::Local_map():private_nh("~")
     private_nh.param("world",world,{5});
     private_nh.param("degree",degree,{5});
     sub_scan = nh.subscribe("scan",10,&Local_map::scan_callback,this);
-    pub_local_map = nh.advertise<nav_msgs::Path>("local_map",1);
+    pub_local_map = nh.advertise<nav_msgs::OccupancyGrid>("local_map",1);
 }
 
 void Local_map::scan_callback(const sensor_msgs::LaserScan::ConstPtr &msg)
 {
+
     laserscan = *msg;
-    create_local_map();
+    if(laserscan.ranges.size() != 0) create_local_map();
+    std::cout << "scan_callback"<<std::endl;
 }
 
 void Local_map::set_grid_map(const int& set_value)
 {
-    grid_map[row/2 + (int)(observation_radius*std::sin(theta)/resoution)][column/2 + (int)(observation_radius*std::cos(theta)/resoution)] = set_value;
-    for(float j=0 ;j<observation_radius; j+=resoution)
+    grid_map[row/2 + (int)(observation_radius*std::sin(theta)/resolution)][column/2 + (int)(observation_radius*std::cos(theta)/resolution)] = set_value;
+    for(float j=0 ;j<observation_radius; j+=resolution)
     {
-        /*if(j <= roomba_radius) grid_map[row/2 +(int)((j*std::sin(theta))/resoution)][column/2 + (int)((j*std::cos(theta))/resoution)] = -1;*/
+        /*if(j <= roomba_radius) grid_map[row/2 +(int)((j*std::sin(theta))/resolution)][column/2 + (int)((j*std::cos(theta))/resolution)] = -1;*/
 
-        grid_map[row/2 +(int)((j*std::sin(theta))/resoution)][column/2 + (int)((j*std::cos(theta))/resoution)] = 0;
+        grid_map[row/2 +(int)((j*std::sin(theta))/resolution)][column/2 + (int)((j*std::cos(theta))/resolution)] = 0;
     }
 }
 
 void Local_map::create_local_map()
 {
-    row = (int)(world/resoution);
-    column = (int)(world/resoution);
+    row = (int)(world/resolution);
+    column = (int)(world/resolution);
+
     grid_map.resize(row,std::vector<int>(column,-1));
 
     angle_min = laserscan.angle_min;
@@ -62,12 +65,17 @@ void Local_map::create_local_map()
     }
 
     nav_msgs::OccupancyGrid local_map;
+    local_map.info.resolution = resolution;
+    local_map.info.width = column;
+    local_map.info.height = row;
+    local_map.data.resize(row*column);
     local_map.header.frame_id ="map";
     for(int i = 0; i<row ;i++)
     {
         for(int j=0; j<column; j++)
         {
             local_map.data[j*row + i] = grid_map[i][j];
+            //local_map.data[j*row + i] = 0;
         }
     }
 
@@ -80,6 +88,7 @@ void Local_map::process()
 
     while(ros::ok())
     {
+        create_local_map();
         ros::spinOnce();
         loop_rate.sleep();
     }

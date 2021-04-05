@@ -69,7 +69,6 @@ class Particle
         nav_msgs::Odometry previous_odo;
 
         std::vector<Particle> particles;
-        std::vector<Particle> init_particles;
 
         nav_msgs::Odometry odometry;
         sensor_msgs::LaserScan laserscan;

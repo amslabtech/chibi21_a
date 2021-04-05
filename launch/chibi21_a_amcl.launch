@@ -2,7 +2,7 @@
 <launch>
     <arg name="map_file" default="$(find chibi21_a)/Dmap1.yaml"/>
     <node pkg="map_server" name="map_server" type="map_server" args="$(arg map_file)" output="screen"/>
-    <node pkg="chibi21_a" name="chibi21_a_amcl" type="chibi21_a_amcl" output="screen">
+    <node pkg="chibi21_a" name="chibi21_a_amcl2" type="chibi21_a_amcl2" output="screen">
         <param name="hz" value="10" type="int"/>
         <param name="N" value="10" type="int"/>
         <param name="INIT_X" value="0.0" type="double"/>

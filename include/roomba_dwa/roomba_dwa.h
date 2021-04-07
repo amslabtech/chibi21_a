@@ -5,6 +5,7 @@
 #include "roomba_500driver_meiji/RoombaCtrl.h"
 #include "sensor_msgs/LaserScan.h"
 #include "geometry_msgs/PoseStamped.h"
+#include "geometry_msgs/PointStamped.h"
 #include "nav_msgs/Path.h"
 #include "nav_msgs/OccupancyGrid.h"
 #include "tf/tf.h"
@@ -49,10 +50,12 @@ private:
     float calc_obstacle_cost();
     void calc_final_input();
     void dwa_control();
+    void get_best_traj();
 
     int hz;
     int x=0;
     int y = 0;
+    int count = 0;
     float dt;
     float mass=100;
     float mass_reso=0.05; //[m]
@@ -112,10 +115,13 @@ private:
     ros::Subscriber sub_pose;
     ros::Publisher pub_twist;
     ros::Publisher pub_predict_path;
+    ros::Publisher pub_goal_point;
+    ros::Publisher pub_best_predict_path;
+    ros::Publisher pub_ob_check;
     nav_msgs::Path path;
     nav_msgs::OccupancyGrid local_map;
     geometry_msgs::PoseStamped local_goal;
-    nav_msgs::Path all_predict_path;
+    nav_msgs::Path best_predict_path;
     nav_msgs::Path predict_path;
     geometry_msgs::PoseStamped pose;
 };

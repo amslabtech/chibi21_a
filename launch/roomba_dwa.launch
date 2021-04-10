@@ -8,11 +8,17 @@
         <param name="robot_distance_gain" value="1.0" />
         <param name="speed_gain" value="1.0" />
         <param name="predict_time" value="3.0" />
+        <param name="v_reso" value="0.1" />
+        <param name="omega_reso" value="0.1" />
+        <param name="max_dyawrate" value="10" />
+        <param name="max_accel" value="0.4" />
+        <param name="safemass_x" value="10" />
+        <param name="safemass_y" value="10" />
     </node>
     <node pkg="chibi21_a" name="local_map" type="local_map">
         <param name="hz" value="10" />
         <param name="world" value="5" />
-        <param name="degree" value="5" />
+        <param name="allience" value="5" />
     </node>
     <node pkg="rviz" type="rviz" name="rviz" args="-d $(find chibi21_a)/config/simulate_dwa.rviz" />
 </launch>

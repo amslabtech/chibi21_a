@@ -55,10 +55,7 @@ private:
     int hz;
     int x=0;
     int y = 0;
-    int count = 0;
     float dt;
-    float mass=100;
-    float mass_reso=0.05; //[m]
     std::vector<std::vector<int>> map;
     int safemass_x;
     int safemass_y;
@@ -66,7 +63,7 @@ private:
     float max_speed = 1.0; //[m/s]
     float min_speed = 0; //-0.5[m/s]
     float max_accel = 0.4;
-    float v_reso = 0.01;
+    float v_reso = 0.1;
     float predict_time = 0.0;
     float max_yawrate = 40.0*M_PI/180; //<=1
     float max_dyawrate = 10.0*M_PI/180; //<=1
@@ -75,22 +72,12 @@ private:
     float robot_distance_gain = 1.0; //β
     float speed_gain = 1.0; //γ
     float speed_cost = 0.0;
-    float safe_space=20;
-    float safe_space3=10;
     float min_cost = 0;
     float final_cost = 0;
     float minr = 0;
     float distance = 0;
     float to_goal_cost = 0.0;
     float ob_cost = 0.0;
-    float goal_magnitude = 0.0;
-    float traj_magnitude = 0.0;
-    float inner_product = 0.0;
-    float inner_product_angle = 0.0;
-
-    //float max_heading=0;
-    //float max_dist=0;
-    //float max_velocity=0;
 
     double roll=0;
     double pitch=0;
@@ -101,6 +88,10 @@ private:
     float roomba_radius = 0.3;
     float theta = 0.0;
     float cost = 0.0;
+    float a = 0.0;
+    float b = 0.0;
+    float max_cost = 0.0;
+    float world = 5.0;
     bool receive_local_map = false;
     std::vector<float> dw;
     Roomba_state state = {0.0,0.0,0.0,0.0,0.0};

@@ -3,11 +3,11 @@
     <node pkg="chibi21_a" name="local_map" type="local_map" output="screen">
         <param name="hz" value="10" />
         <param name="world" value="5" />
-        <param name="degree" value="5" />
+        <param name="allience" value="5" />
     </node>
-    <node pkg="urg_node" name="urg_node" type="urg_node">
-        <param name="serial_port" value="/dev/ttyACM0"/>
-    </node>
+    <!--<node pkg="urg_node" name="urg_node" type="urg_node">
+    <param name="serial_port" value="/dev/ttyACM0"/>
+</node>-->
     <node pkg="rviz" type="rviz" name="rviz" args="-d $(find chibi21_a)/config/simulate_local_map.rviz" />
 
 </launch>

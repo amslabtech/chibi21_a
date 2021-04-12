@@ -19,8 +19,8 @@ DWA::DWA():private_nh("~")
 
     max_dyawrate *= (M_PI/180);
 
-    //sub_local_goal = nh.subscribe("",10,&DWA::local_goal_callback,this);
-    //sub_pose = nh.subscribe("",10,&DWA::pose_callback,this);
+    sub_local_goal = nh.subscribe("",10,&DWA::local_goal_callback,this);
+    sub_pose = nh.subscribe("estimated_pose",10,&DWA::pose_callback,this);
     sub_local_map = nh.subscribe("local_map",10,&DWA::local_map_callback,this);//local_map
 
     pub_twist = nh.advertise<roomba_500driver_meiji::RoombaCtrl>("/roomba/control",1);
@@ -32,7 +32,7 @@ DWA::DWA():private_nh("~")
 
 void DWA::local_goal_callback(const geometry_msgs::PoseStamped::ConstPtr &msg)
 {
-    //local_goal = *msg;
+    local_goal = *msg;
 }
 
 void DWA::local_map_callback(const nav_msgs::OccupancyGrid::ConstPtr &msg)
@@ -43,7 +43,7 @@ void DWA::local_map_callback(const nav_msgs::OccupancyGrid::ConstPtr &msg)
 
 void DWA::pose_callback(const geometry_msgs::PoseStamped::ConstPtr &msg)
 {
-    //pose = *msg;
+    pose = *msg;
 }
 
 void DWA::set_map()
@@ -238,8 +238,8 @@ float DWA::calc_obstacle_cost()
 void DWA::roomba()
 {
     goal.resize(2);
-    goal[0] = 0.0;
-    goal[1] = 3.0;
+    goal[0] = local_goal.pose.position.x -pose.pose.position.x ;
+    goal[1] = local_goal.pose.position.y - pose.pose.position.y;
     dwa_control();
     if(sqrt((state.x - goal[0]*state.x)*(state.x - goal[0]) + (state.y - goal[1]) * (state.y - goal[1])) <= roomba_radius)
     {

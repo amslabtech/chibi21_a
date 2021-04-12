@@ -145,7 +145,7 @@ void DWA::calc_final_input()
             }
         }
     }
-    //std::cout << "min_m,v,y" << min_m.v<<"," << min_m.omega << std::endl;
+    std::cout << "min_m,v,y" << min_m.v<<"," << min_m.omega << std::endl;
     get_best_traj();
 }
 
@@ -176,13 +176,13 @@ void DWA::dwa_control()
 
     calc_dynamic_window(state);
     calc_final_input();
-/*
+
     roomba_500driver_meiji::RoombaCtrl cmd_vel;
     cmd_vel.cntl.linear.x = min_m.v;
     cmd_vel.cntl.angular.z = min_m.omega;
     cmd_vel.mode = 11;
     pub_twist.publish(cmd_vel);
-    */
+
 }
 
 float DWA::calc_obstacle_cost()
@@ -238,7 +238,7 @@ float DWA::calc_obstacle_cost()
 void DWA::roomba()
 {
     goal.resize(2);
-    goal[0] = -2.0;
+    goal[0] = 0.0;
     goal[1] = 3.0;
     dwa_control();
     if(sqrt((state.x - goal[0]*state.x)*(state.x - goal[0]) + (state.y - goal[1]) * (state.y - goal[1])) <= roomba_radius)

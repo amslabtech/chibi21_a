@@ -144,7 +144,7 @@ void AMCL::p_move(AMCL::Particle &p)
 
     std::normal_distribution<> move_dist_d(0.0,MOVE_DIST_COV);
     tf::Point dist_dist;
-    d_dist.setValue(move_dist_d(engine),0.0,0.0);   //移動距離をばらつかせるベクトル
+    dist_dist.setValue(move_dist_d(engine),0.0,0.0);   //移動距離をばらつかせるベクトル
 
     std::normal_distribution<> move_yaw_d(0.0,MOVE_YAW_COV);    //角度をばらつか(ry
     tf::Quaternion orientation_dist = tf::createQuaternionFromYaw(move_yaw_d(engine));

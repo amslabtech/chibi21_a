@@ -136,7 +136,10 @@ void AMCL::p_move(AMCL::Particle &p)
     tf::Quaternion d_orientation = current_orientation * previous_orientation.inverse();
     tf::Point d_position = current_position - previous_position;
 
-    pointTFToMsg(p_position + quatRotate(p.init_orientation, d_position), p.pose.pose.position);
+    tf::Point d_dist;
+    d_dist.setValue(d_position.length(),0.0,0.0);
+
+    pointTFToMsg(p_position + quatRotate(p_orientation, d_dist), p.pose.pose.position);
     quaternionTFToMsg(p_orientation*d_orientation, p.pose.pose.orientation);
 
     if(current_orientation==previous_orientation && current_position==previous_position)
@@ -159,7 +162,7 @@ void AMCL::p_measurement_update()
 
     weight_normalize();
 
-    ROS_INFO("normalize");
+    // ROS_INFO("normalize");
 }
 
 void AMCL::weight_normalize()
@@ -171,26 +174,41 @@ void AMCL::weight_normalize()
         w_sum += particles[i].weight;
     }
 
+    max_weight = 0.0;
     for(int i = 0; i < N; i++)
     {
         particles[i].weight /= w_sum;
+        //resampling_wheel用に重みの最大値を出しておく
+        if(max_weight < particles[i].weight) max_weight = particles[i].weight;
     }
 }
 
 void AMCL::p_calc_weight(AMCL::Particle &p)
 {
-    double wall_range = 0.0;
-    double range_diff = 0.0;
+    p.weight = 0.0;
+    double p_map_x = p.pose.pose.position.x - map.info.origin.position.x;
+    double p_map_y = p.pose.pose.position.y - map.info.origin.position.y;
 
-    for(int i = 0; i < (int)laserscan.ranges.size(); i += ANGLE_INC)
+    if(!is_wall(p_map_x,p_map_y))
     {
-        // std::cout<<"ANGLE_INC="<<ANGLE_INC<<std::endl;
-        wall_range = get_wall_range(laserscan.angle_min + i*laserscan.angle_increment, p);
-        range_diff = wall_range - laserscan.ranges[i];
+        double wall_range = 0.0;
+        double range_diff = 0.0;
 
-        p.weight = M_WEIGHT * exp((-range_diff*range_diff)/(2.0 * M_COV * M_COV));
+        p.weight = 0.0;
+
+        for(int i = 0; i < (int)laserscan.ranges.size(); i += ANGLE_INC)
+        {
+        // std::cout<<"ANGLE_INC="<<ANGLE_INC<<std::endl;
+            wall_range = get_wall_range(laserscan.angle_min + i*laserscan.angle_increment, p);
+            range_diff = wall_range - laserscan.ranges[i];
+
+            p.weight += M_WEIGHT * exp((-range_diff*range_diff)/(2.0 * M_COV * M_COV));
+            // ROS_INFO("weight+=");
+        }
+        // ROS_INFO("sum_weight");
     }
-    ROS_INFO("calc_weight");
+    // ROS_INFO("calc_weight");
+    // std::cout<<"p is_wall="<<is_wall(p.pose.pose.position.x,p.pose.pose.position.y)<<std::endl;
 }
 
 double AMCL::get_wall_range(double laser_angle, AMCL::Particle p)
@@ -225,6 +243,8 @@ bool AMCL::is_wall(double x, double y)
 {
     int cx = (int)(x / map.info.resolution);
     int cy = (int)(y / map.info.resolution);
+
+    // std::cout<<"cx="<<cx<<",cy="<<cy<<std::endl;
 
     if(cx > (int)map.info.width || cx < 0 ) return true;
     if(cy > (int)map.info.height || cy < 0 ) return true;
@@ -308,6 +328,53 @@ double AMCL::Particle::get_wall_range2(double laser_angle, nav_msgs::OccupancyGr
 }
 */
 
+void AMCL::resampling_process()
+{
+    /*
+    if(calc_ess() > ESS_LIMEN)
+    {
+        resampling();
+    }
+    */
+    resampling();
+    ROS_INFO("resampling process");
+    std::cout<<"ESS="<<calc_ess()<<std::endl;
+}
+
+double AMCL::calc_ess()
+{
+    double sum = 0.0;
+
+    for(int i = 0; i < N; i++)
+    {
+        sum += particles[i].weight*particles[i].weight;
+    }
+
+    return 1.0 / sum;
+}
+
+void AMCL::resampling()
+{
+    std::vector<Particle> next_particles;
+
+    std::uniform_int_distribution<> int_dist(0,N-1);
+    int index = int_dist(engine);
+    std::uniform_real_distribution<> real_dist(0.0,max_weight*2.0);
+    for(int i = 0; i < N; i++)
+    {
+       double beta = real_dist(engine);
+       while(beta > particles[index].weight)
+       {
+           beta -= particles[index].weight;
+           index++;
+           index = index%N;
+       }
+       next_particles.push_back(particles[index]);
+    }
+    particles = next_particles;
+    ROS_INFO("resampling");
+}
+
 void AMCL::p_disp_update()
 {
     // geometry_msgs::PoseArray disp_poses;
@@ -331,7 +398,11 @@ void AMCL::process()
         if(map_get && odo_get && scan_get)
         {
             p_motion_update();
-            if(odo_move) p_measurement_update();
+            if(odo_move)
+            {
+                p_measurement_update();
+                resampling_process();
+            }
             p_disp_update();
         }
 

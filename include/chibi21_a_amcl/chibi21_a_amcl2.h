@@ -55,6 +55,9 @@ class AMCL
          double get_wall_range(double laser_angle, AMCL::Particle p);
          bool is_wall(double x, double y);
         void weight_normalize();
+        void resampling_process();
+        double calc_ess();
+        void resampling();
 
         void p_disp_update();   //rviz表示用
 
@@ -71,6 +74,7 @@ class AMCL
         double CHECK_INTERVAL;  //壁を探す際の距離の間隔
         double M_WEIGHT;        //尤度計算に使う．現状意味なし
         double M_COV;           //
+        double ESS_LIMEN;       //ESSのしきい値
 
         int hz;
 
@@ -105,6 +109,8 @@ class AMCL
         bool map_get;
 
         bool first_update;  //最初の更新の前だけprevious_odo=current_odoとするためのフラグ
+
+        double max_weight;
 };
 
 #endif

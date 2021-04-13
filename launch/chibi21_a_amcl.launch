@@ -11,6 +11,8 @@
         <param name="INIT_X_COV" value="1.0" type="double"/>
         <param name="INIT_Y_COV" value="1.0" type="double"/>
         <param name="INIT_YAW_COV" value="1.0" type="double"/>
+        <param name="MOVE_DIST_COV" value="0.01" type="double"/>
+        <param name="MOVE_YAW_COV" value="0.01" type="double"/>
         <param name="ANGLE_INC" value="5" type="int"/>
         <param name="MAX_RANGE" value="10.0" type="double"/>
         <param name="CHECK_INTERVAL" value="0.02" type="double"/>

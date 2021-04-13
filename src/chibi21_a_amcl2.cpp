@@ -15,11 +15,14 @@ AMCL::AMCL():private_nh("~")
     private_nh.getParam("INIT_X_COV",INIT_X_COV);
     private_nh.getParam("INIT_Y_COV",INIT_Y_COV);
     private_nh.getParam("INIT_YAW_COV",INIT_YAW_COV);
+    private_nh.getParam("MOVE_DIST_COV",MOVE_DIST_COV);
+    private_nh.getParam("MOVE_YAW_COV",MOVE_YAW_COV);
     private_nh.getParam("ANGLE_INC",ANGLE_INC);
     private_nh.getParam("MAX_RANGE",MAX_RANGE);
     private_nh.getParam("CHECK_INTERVAL",CHECK_INTERVAL);
     private_nh.getParam("M_WEIGHT",M_WEIGHT);
     private_nh.getParam("M_COV",M_COV);
+    private_nh.getParam("ESS_LIMEN",ESS_LIMEN);
 
     private_nh.param("hz",hz,{10});
 
@@ -137,10 +140,17 @@ void AMCL::p_move(AMCL::Particle &p)
     tf::Point d_position = current_position - previous_position;
 
     tf::Point d_dist;
-    d_dist.setValue(d_position.length(),0.0,0.0);
+    d_dist.setValue(d_position.length(),0.0,0.0);   //大きさ=移動距離の正面向きベクトル
 
-    pointTFToMsg(p_position + quatRotate(p_orientation, d_dist), p.pose.pose.position);
-    quaternionTFToMsg(p_orientation*d_orientation, p.pose.pose.orientation);
+    std::normal_distribution<> move_dist_d(0.0,MOVE_DIST_COV);
+    tf::Point dist_dist;
+    d_dist.setValue(move_dist_d(engine),0.0,0.0);   //移動距離をばらつかせるベクトル
+
+    std::normal_distribution<> move_yaw_d(0.0,MOVE_YAW_COV);    //角度をばらつか(ry
+    tf::Quaternion orientation_dist = tf::createQuaternionFromYaw(move_yaw_d(engine));
+
+    pointTFToMsg(p_position + quatRotate(p_orientation, d_dist + dist_dist), p.pose.pose.position);
+    quaternionTFToMsg(p_orientation*d_orientation*orientation_dist, p.pose.pose.orientation);
 
     if(current_orientation==previous_orientation && current_position==previous_position)
     {
@@ -330,13 +340,11 @@ double AMCL::Particle::get_wall_range2(double laser_angle, nav_msgs::OccupancyGr
 
 void AMCL::resampling_process()
 {
-    /*
     if(calc_ess() > ESS_LIMEN)
     {
         resampling();
     }
-    */
-    resampling();
+    // resampling();
     ROS_INFO("resampling process");
     std::cout<<"ESS="<<calc_ess()<<std::endl;
 }

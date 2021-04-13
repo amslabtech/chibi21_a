@@ -69,6 +69,10 @@ class AMCL
         double INIT_X_COV;      //パーティクルのばらつき
         double INIT_Y_COV;      //
         double INIT_YAW_COV;    //
+
+        double MOVE_DIST_COV;   //動作更新のばらつき（距離）
+        double MOVE_YAW_COV;    //動作更新のばらつき（回転）
+
         double ANGLE_INC;       //レーザーの値を何本間隔で参照するか
         double MAX_RANGE;       //壁までの距離を測る際の限界距離
         double CHECK_INTERVAL;  //壁を探す際の距離の間隔

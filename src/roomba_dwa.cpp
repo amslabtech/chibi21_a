@@ -19,7 +19,7 @@ DWA::DWA():private_nh("~")
 
     max_dyawrate *= (M_PI/180);
 
-    sub_local_goal = nh.subscribe("",10,&DWA::local_goal_callback,this);
+    sub_local_goal = nh.subscribe("local_goal",10,&DWA::local_goal_callback,this);
     sub_pose = nh.subscribe("estimated_pose",10,&DWA::pose_callback,this);
     sub_local_map = nh.subscribe("local_map",10,&DWA::local_map_callback,this);//local_map
 
@@ -238,8 +238,23 @@ float DWA::calc_obstacle_cost()
 void DWA::roomba()
 {
     goal.resize(2);
-    goal[0] = local_goal.pose.position.x -pose.pose.position.x ;
-    goal[1] = local_goal.pose.position.y - pose.pose.position.y;
+    float x = local_goal.pose.position.x - pose.pose.position.x;
+    float y = fabs(local_goal.pose.position.y - pose.pose.position.y);
+
+    if(x < y)
+    {
+        goal[0] = local_goal.pose.position.x - pose.pose.position.x ;
+        goal[1] = fabs(local_goal.pose.position.y - pose.pose.position.y);
+    }
+    else
+    {
+        goal[1] = local_goal.pose.position.x - pose.pose.position.x ;
+        goal[0] = fabs(local_goal.pose.position.y - pose.pose.position.y);
+    }
+    std::cout << "pose x" << pose.pose.position.x << std::endl;
+    std::cout << "pose y" << pose.pose.position.y << std::endl;
+    std::cout << "goal.x" << goal[0] << std::endl;
+    std::cout << "goal.y" << goal[1] << std::endl;
     dwa_control();
     if(sqrt((state.x - goal[0]*state.x)*(state.x - goal[0]) + (state.y - goal[1]) * (state.y - goal[1])) <= roomba_radius)
     {

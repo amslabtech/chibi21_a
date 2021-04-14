@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
 <launch>
-    <node pkg="roomba_500driver_meiji" name="roomba_dwa_node" type="main500"/>
-    <!--<node pkg="urg_node" name="urg_node" type="urg_node">
+    <!-- <node pkg="roomba_500driver_meiji" name="roomba_dwa_node" type="main500"/>-->
+    <node pkg="urg_node" name="urg_node" type="urg_node">
         <param name="serial_port" value="/dev/ttyACM0"/>
-    </node>-->
+    </node>
 
    <node pkg = "chibi21_a" name="astar" type="astar" >
         <param name="hz" value="20" />
@@ -14,9 +14,9 @@
     </node>
 
     <!-- test localizer -->
-    <node pkg = "chibi21_a" name="localizer" type="localizer" >
+    <!-- <node pkg = "chibi21_a" name="localizer" type="localizer" >
         <rosparam file="$(find chibi21_a)/config/param/localizer.yaml" command="load"/>
-    </node>
+    </node>-->
     <node pkg="chibi21_a" name="roomba_dwa" type="roomba_dwa" >
         <param name="hz" value="10" />
         <param name="dt" value="1" />

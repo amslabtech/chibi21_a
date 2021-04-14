@@ -179,7 +179,7 @@ void DWA::dwa_control()
 
     roomba_500driver_meiji::RoombaCtrl cmd_vel;
     cmd_vel.cntl.linear.x = min_m.v;
-    cmd_vel.cntl.angular.z = min_m.omega;
+    cmd_vel.cntl.angular.z =-1* min_m.omega;
     cmd_vel.mode = 11;
     pub_twist.publish(cmd_vel);
 

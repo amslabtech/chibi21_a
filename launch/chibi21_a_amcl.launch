@@ -19,5 +19,7 @@
         <param name="M_WEIGHT" value="1.0" type="double"/>
         <param name="M_COV" value="0.05" type="double"/>
         <param name="ESS_LIMEN" value="0.8" type="double"/>
+        <param name="ALPHA_SLOW" value="0.0" type="double"/>
+        <param name="ALPHA_FAST" value="0.0" type="double"/>
     </node>
 </launch>

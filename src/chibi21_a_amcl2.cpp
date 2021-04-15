@@ -23,6 +23,8 @@ AMCL::AMCL():private_nh("~")
     private_nh.getParam("M_WEIGHT",M_WEIGHT);
     private_nh.getParam("M_COV",M_COV);
     private_nh.getParam("ESS_LIMEN",ESS_LIMEN);
+    private_nh.getParam("ALPHA_SLOW",ALPHA_SLOW);
+    private_nh.getParam("ALPHA_FAST",ALPHA_FAST);
 
     private_nh.param("hz",hz,{10});
 
@@ -73,11 +75,6 @@ void AMCL::map_callback(const nav_msgs::OccupancyGrid::ConstPtr &msg)
         init_particles.push_back(p);
     }
     particles = init_particles;
-
-    // for(int i = 0; i < N; i++)
-    // {
-        // std::cout<<init_particles[i].pose<<std::endl;
-    // }
 
     ROS_INFO("Particles init");
 }
@@ -170,9 +167,9 @@ void AMCL::p_measurement_update()
         p_calc_weight(particles[i]);
     }
 
-    std::cout<<"weight="<<particles[0].weight<<std::endl;
+    // std::cout<<"weight="<<particles[0].weight<<std::endl;
 
-    ROS_INFO("measurement_update");
+    // ROS_INFO("measurement_update");
 
     weight_normalize();
 
@@ -212,17 +209,13 @@ void AMCL::p_calc_weight(AMCL::Particle &p)
 
         for(int i = 0; i < (int)laserscan.ranges.size(); i += ANGLE_INC)
         {
-        // std::cout<<"ANGLE_INC="<<ANGLE_INC<<std::endl;
             wall_range = get_wall_range(laserscan.angle_min + i*laserscan.angle_increment, p);
             range_diff = wall_range - laserscan.ranges[i];
 
             p.weight += M_WEIGHT * exp((-range_diff*range_diff)/(2.0 * M_COV * M_COV));
-            // ROS_INFO("weight+=");
         }
-        // ROS_INFO("sum_weight");
     }
     // ROS_INFO("calc_weight");
-    // std::cout<<"p is_wall="<<is_wall(p.pose.pose.position.x,p.pose.pose.position.y)<<std::endl;
 }
 
 double AMCL::get_wall_range(double laser_angle, AMCL::Particle p)
@@ -268,89 +261,14 @@ bool AMCL::is_wall(double x, double y)
     return false;
 }
 
-/*
-double AMCL::Particle::get_wall_range(double laser_angle, nav_msgs::OccupancyGrid map)
-{
-    //次の横線との交点を算出
-    //次の縦線との交点を算出
-    //それぞれの交点までの距離を比較
-    //距離の大小関係が逆転するまでグリッドを横または縦に移動
-
-    double angle = laser_angle + getYaw(pose.pose.orientation); //壁までの距離を測定する方向
-
-    //マップ座標に変換
-    //パーティクルの座標
-    double p_x = pose.pose.position.x - map.origin.position.x;
-    double p_y = pose.pose.position.y - map.origin.position.y;
-    //直線の端の座標
-    double max_x = pose.pose.position.x + MAX_RANGE*cos(angle) - map.origin.position.x;
-    double max_y = pose.pose.position.y + MAX_RANGE*sin(angle) - map.origin.position.y;
-
-    //直線の傾きによって判別
-    bool slope_judge;
-    if(fabs(max_x-p_x) > fabs(max_y-p_y)) slope_judge = true;
-    else slope_judge = false;
-
-    //セルに変換
-    int p_cell_x = (int)(p_x / map.resolution);
-    int p_cell_y = (int)(p_y / map.resolution);
-    int max_cell_x = (int)(max_x / map.resolution);
-    int max_cell_y = (int)(max_y / map.resolution);
-
-    if(map.data[p_cell_x + p_cell_y*map.width] != 0) return 0.0;  //かべのなかにいる
-
-    //グリッドとの交点
-    double inter_x = 0.0;
-    double inter_y = 0.0;
-
-    double ind_v;   //独立変数．こちらをresolutionずつ足していく
-    double dep_v;
-
-    if(slope_judge)
-    {
-    }
-}
-
-double AMCL::Particle::get_wall_range2(double laser_angle, nav_msgs::OccupancyGrid map)
-{
-    double angle = laser_angle + getYaw(pose.pose.orientation); //壁までの距離を測定する方向
-
-    //マップ座標に変換
-    //パーティクルの座標
-    double p_x = pose.pose.position.x - map.origin.position.x;
-    double p_y = pose.pose.position.y - map.origin.position.y;
-    //直線の端の座標
-    double max_x = pose.pose.position.x + MAX_RANGE*cos(angle) - map.origin.position.x;
-    double max_y = pose.pose.position.y + MAX_RANGE*sin(angle) - map.origin.position.y;
-
-    //セルに変換
-    int p_cell_x = (int)(p_x / map.resolution);
-    int p_cell_y = (int)(p_y / map.resolution);
-    int max_cell_x = (int)(max_x / map.resolution);
-    int max_cell_y = (int)(max_y / map.resolution);
-
-    int dx = 0;
-    int dy = 0;
-
-    if(max_cell_x - p_cell_x > 0) dx = 1;
-    else (max_cell_x - p_cell_x < 0) dx = -1;
-    else (max_cell_x - p_cell_x = 0) dx = 0;
-
-    if(max_cell_y - p_cell_y > 0) dy = 1;
-    else (max_cell_y - p_cell_y < 0) dy = -1;
-    else (max_cell_y - p_cell_y = 0) dy = 0;
-}
-*/
-
 void AMCL::resampling_process()
 {
     if(calc_ess() < ESS_LIMEN*(double)N)
     {
         resampling();
     }
-    // resampling();
-    ROS_INFO("resampling process");
-    std::cout<<"ESS="<<calc_ess()<<std::endl;
+    // ROS_INFO("resampling process");
+    // std::cout<<"ESS="<<calc_ess()<<std::endl;
 }
 
 double AMCL::calc_ess()
@@ -384,15 +302,13 @@ void AMCL::resampling()
        next_particles.push_back(particles[index]);
     }
     particles = next_particles;
-    ROS_INFO("resampling");
+    // ROS_INFO("resampling");
 }
 
 void AMCL::pose_estimate()
 {
     tf::Point sum_pos;
     sum_pos.setZero();
-
-    // double sum_yaw = 0.0;
 
     int max_w_num = 0;
 
@@ -404,20 +320,9 @@ void AMCL::pose_estimate()
         pointMsgToTF(particles[i].pose.pose.position, p_position);
         sum_pos += p_position * particles[i].weight;
 
-        // double p_yaw = fix_yaw(tf::getYaw(particles[i].pose.pose.orientation));
-        // sum_yaw += p_yaw;
-
         if(particles[max_w_num].weight < particles[i].weight) max_w_num = i;
         sum_w += particles[i].weight;
     }
-
-    // tf::Point ave_pos = sum_pos / (double)particles.size();
-    // pointTFToMsg(ave_pos, estimated_pose.pose.position);
-    //
-    // double ave_yaw = sum_yaw / (double)particles.size();
-    // tf::Quaternion ave_qua;
-    // ave_qua.setRPY(0.0,0.0,ave_yaw);
-    // quaternionTFToMsg(ave_qua, estimated_pose.pose.orientation);
 
     tf::Point ave_pos = sum_pos / sum_w;
     pointTFToMsg(ave_pos, estimated_pose.pose.position);
@@ -435,12 +340,10 @@ double AMCL::fix_yaw(double yaw)
 
 void AMCL::p_disp_update()
 {
-    // geometry_msgs::PoseArray disp_poses;
     for(int i = 0; i < N; i++)
     {
         poses.poses[i] = particles[i].pose.pose;
     }
-    // poses.poses = disp_poses.poses;
 }
 
 void AMCL::process()
@@ -454,8 +357,8 @@ void AMCL::process()
             if(odo_move)
             {
                 p_measurement_update();
-                resampling_process();
                 pose_estimate();
+                resampling_process();
             }
             p_disp_update();
         }
@@ -464,9 +367,7 @@ void AMCL::process()
         pub_p_poses.publish(poses);
 
         ros::spinOnce();
-        // ROS_INFO("foo");
         rate.sleep();
-        // ROS_INFO("foo foo");
     }
 }
 

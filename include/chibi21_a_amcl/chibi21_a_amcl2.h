@@ -82,6 +82,9 @@ class AMCL
         double M_COV;           //小さいほど厳しくチェック
         double ESS_LIMEN;       //ESSのしきい値
 
+        double ALPHA_SLOW;      //adaptiveMCL用．未使用
+        double ALPHA_FAST;      //
+
         int hz;
 
         ros::NodeHandle nh;

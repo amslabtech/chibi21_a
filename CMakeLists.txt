@@ -1,7 +1,11 @@
 cmake_minimum_required(VERSION 3.0.2)
 project(chibi21_a)
+<<<<<<< HEAD
 
 SET(CMAKE_CXX_FLAGS "-std=c++11 -O2 -g -Wall ${CMAKE_CXX_FLAGS}")   ##21/03/30
+=======
+SET(CMAKE_CXX_FLAGS "-std=c++11 -O2 -g -Wall ${CMAKE_CXX_FLAGS}")
+>>>>>>> master
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
 
@@ -11,11 +15,16 @@ SET(CMAKE_CXX_FLAGS "-std=c++11 -O2 -g -Wall ${CMAKE_CXX_FLAGS}")   ##21/03/30
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
+<<<<<<< HEAD
   std_msgs
   geometry_msgs
   nav_msgs
   roomba_500driver_meiji
   tf
+=======
+  nav_msgs
+  geometry_msgs
+>>>>>>> master
 )
 
 ## System dependencies are found with CMake's conventions
@@ -108,8 +117,8 @@ find_package(catkin REQUIRED COMPONENTS
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-#  INCLUDE_DIRS include
-#  LIBRARIES chibi21_a
+  INCLUDE_DIRS include
+  LIBRARIES chibi21_a
 #  CATKIN_DEPENDS roscpp rospy
 #  DEPENDS system_lib
 )
@@ -121,7 +130,11 @@ catkin_package(
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
+<<<<<<< HEAD
   include
+=======
+include
+>>>>>>> master
   ${catkin_INCLUDE_DIRS}
 )
 
@@ -138,9 +151,15 @@ include_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
+<<<<<<< HEAD
 add_executable(chibi21_a_amcl src/chibi21_a_amcl.cpp)
 add_executable(chibi21_a_amcl2 src/chibi21_a_amcl2.cpp)
 
+=======
+add_executable(astar src/astar.cpp)
+add_executable(local_goal_creator src/local_goal_creator.cpp)
+add_executable(local_map src/local_map.cpp)
+>>>>>>> master
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
 ## target back to the shorter version for ease of user use
@@ -149,12 +168,22 @@ add_executable(chibi21_a_amcl2 src/chibi21_a_amcl2.cpp)
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
+<<<<<<< HEAD
 add_dependencies(chibi21_a_amcl ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(chibi21_a_amcl2 ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(chibi21_a_amcl ${catkin_LIBRARIES})
 target_link_libraries(chibi21_a_amcl2 ${catkin_LIBRARIES})
+=======
+add_dependencies(astar ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(local_goal_creator ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(local_map ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+## Specify libraries to link a library or executable target against
+target_link_libraries(astar ${catkin_LIBRARIES})
+target_link_libraries(local_goal_creator ${catkin_LIBRARIES})
+target_link_libraries(local_map ${catkin_LIBRARIES})
+>>>>>>> master
 
 #############
 ## Install ##

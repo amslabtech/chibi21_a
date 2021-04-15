@@ -47,7 +47,7 @@ class AMCL
         void laserscan_callback(const sensor_msgs::LaserScan::ConstPtr &msg);
         void map_callback(const nav_msgs::OccupancyGrid::ConstPtr &msg);
 
-         void p_init(AMCL::Particle &p);
+         void p_init(AMCL::Particle &p, double init_x, double init_y, double init_yaw, double init_x_cov, double init_y_cov, double init_yaw_cov);
         void p_motion_update();
          void p_move(AMCL::Particle &p);
         void p_measurement_update();
@@ -56,6 +56,7 @@ class AMCL
          bool is_wall(double x, double y);
         void weight_normalize();
         void resampling_process();
+        void simple_reset();
         double calc_ess();
         void resampling();
         void pose_estimate();
@@ -82,8 +83,9 @@ class AMCL
         double M_COV;           //小さいほど厳しくチェック
         double ESS_LIMEN;       //ESSのしきい値
 
-        double ALPHA_SLOW;      //adaptiveMCL用．未使用
-        double ALPHA_FAST;      //
+        double ALPHA_SLOW;      //adaptiveMCL用．           0.1
+        double ALPHA_FAST;      //                          0.5
+        double SLOW_FAST_RATIO; //weight_fast/weight_slow   0.4
 
         int hz;
 
@@ -113,13 +115,16 @@ class AMCL
         nav_msgs::OccupancyGrid map;
 
         bool odo_get;
-        bool odo_move;     //動いていたらtrue
+        bool odo_move;          //動いていたらtrue
         bool scan_get;
         bool map_get;
 
-        bool first_update;  //最初の更新の前だけprevious_odo=current_odoとするためのフラグ
+        bool first_update;      //最初の更新の前だけprevious_odo=current_odoとするためのフラグ
 
         double max_weight;
+
+        double weight_slow;     //adaptiveMCL用．
+        double weight_fast;     //
 };
 
 #endif

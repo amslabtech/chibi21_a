@@ -31,26 +31,45 @@ void Local_Goal_Creator::mesure_dis(const float& x1,const float& y1,const float&
 }
 
 void Local_Goal_Creator::set_the_next_goal(){
-    float lx = local_goal.pose.position.x;
     float cx = current_pose.pose.position.x;
-    float ly = local_goal.pose.position.y;
     float cy = current_pose.pose.position.y;
-    mesure_dis(lx,ly,cx,cy);
-    //std::cout << "distance" << distance << std::endl;
-    if (reselection_dis > distance){                                    //仮目標に十分近づいた時
+    count = 0;
+    max_distance = 1e5;
+
+    for(auto& point : global_path.poses)
+    {
+        float x = point.pose.position.x;
+        float y = point.pose.position.y;
+
+        mesure_dis(x,y,cx,cy);
+        if(max_distance > distance)
+        {
+            max_distance = distance;
+            min_index = count;
+        }
+        count++;
+    }
+
+    if(min_index+reselection_add_val > global_path.poses.size() -1)
+    {
+        local_goal = global_path.poses[global_path.poses.size() - 1];
+    }
+    else
+    {
+        local_goal = global_path.poses[min_index+reselection_add_val];
+    }
+
+
+
+   /* if (reselection_dis > distance){                                    //仮目標に十分近づいた時
         goal_number += reselection_add_val;
-        //std::cout << "goal_number" << goal_number << std::endl;
-        int progress = (goal_number - reselection_add_val) / global_path.poses.size() *100;
-        //std::cout<< "[LGC]:Reselected the next goal  --progress:"<<progress<<"%--"<<std::endl;
         if(global_path.poses.size() < goal_number) {                        //目標が最終目標より遠かった時
             local_goal = global_path.poses[global_path.poses.size()-1];
-            //std::cout<<"[LGC]:LAST goal coordinates("<< lx <<","<< ly <<")"<<std::endl;
         }
         else {
             local_goal = global_path.poses[goal_number];
-            //std::cout<<"[LGC]:Next goal coordinates("<< lx <<","<< ly <<")"<<std::endl;
         }
-    }
+    }*/
     local_goal.header.frame_id = "map";
     pub_local_goal.publish(local_goal);
 

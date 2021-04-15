@@ -20,6 +20,9 @@ class Local_Goal_Creator{
         int reselection_add_val;
         float distance = 0;
         float goal_number = 0;
+        int min_index = 0.0;
+        int count = 0.0;
+        float max_distance = 0.0;
         bool got_global_path = false;
         bool got_current_pose = false;
 

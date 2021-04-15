@@ -78,6 +78,11 @@ private:
     float distance = 0;
     float to_goal_cost = 0.0;
     float ob_cost = 0.0;
+    float conversion_theta = 0.0;
+    float conversion_x = 0.0;
+    float conversion_y = 0.0;
+    float wait =0.0;
+    float min_ob_cost = 0.0;
 
     double roll=0;
     double pitch=0;

@@ -4,14 +4,14 @@
     <node pkg="chibi21_a" name="roomba_dwa" type="roomba_dwa" output="screen">
         <param name="hz" value="10" />
         <param name="dt" value="0.5" />
-        <param name="to_goal_gain" value="1.0" />
-        <param name="robot_distance_gain" value="1.0" />
+        <param name="to_goal_gain" value="0.1" />
+        <param name="robot_distance_gain" value="5.0" />
         <param name="speed_gain" value="1.0" />
-        <param name="predict_time" value="4.0" />
+        <param name="predict_time" value="3.0" />
         <param name="v_reso" value="0.1" />
         <param name="omega_reso" value="0.1" />
         <param name="max_dyawrate" value="10" />
-        <param name="max_accel" value="0.4" />
+        <param name="max_accel" value="0.3" />
         <param name="safemass_x" value="10" />
         <param name="safemass_y" value="10" />
     </node>

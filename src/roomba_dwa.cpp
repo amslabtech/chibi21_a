@@ -135,7 +135,8 @@ void DWA::calc_final_input()
             to_goal_cost = calc_to_goal_cost();
             speed_cost = max_speed - traj.back().v;
             ob_cost = calc_obstacle_cost();
-            final_cost = to_goal_gain*to_goal_cost + speed_gain*speed_cost + robot_distance_gain*ob_cost;
+           // std::cout << "ob_cost" << ob_cost << std::endl;
+            final_cost = to_goal_gain*to_goal_cost + speed_gain*speed_cost +  robot_distance_gain*ob_cost;
             if(min_cost >= final_cost)
             {
                 min_cost = final_cost;
@@ -143,9 +144,14 @@ void DWA::calc_final_input()
                 min_m.omega = y;
                 best_traj = traj;
             }
+            if(min_ob_cost >= ob_cost)
+            {
+                min_ob_cost = ob_cost;
+            }
+
         }
     }
-    std::cout << "min_m,v,y" << min_m.v<<"," << min_m.omega << std::endl;
+   // std::cout << "min_m,v,y" << min_m.v<<"," << min_m.omega << std::endl;
     get_best_traj();
 }
 
@@ -166,22 +172,32 @@ void DWA::get_best_traj()
 
 void DWA::dwa_control()
 {
-    /*tf::Quaternion quat(pose.pose.orientation.x,pose.pose.orientation.y,pose.pose.orientation.z,pose.pose.orientation.w);
-    tf::Matrix3x3(quat).getRPY(roll, pitch, yaw);
-    theta = float(yaw);
-    state.x = pose.pose.position.x;
-    state.y = pose.pose.position.y;
-    state.yaw = yaw;*/
     state = {0,0,0.0,0.0,0.0};
 
     calc_dynamic_window(state);
     calc_final_input();
-
     roomba_500driver_meiji::RoombaCtrl cmd_vel;
-    cmd_vel.cntl.linear.x = min_m.v;
-    cmd_vel.cntl.angular.z =-1* min_m.omega;
-    cmd_vel.mode = 11;
-    pub_twist.publish(cmd_vel);
+    if(wait < 50)
+    {
+        cmd_vel.cntl.linear.x = 0.0;
+        cmd_vel.mode = 11;
+        pub_twist.publish(cmd_vel);
+        wait++;
+    }
+    else
+    {
+        cmd_vel.cntl.linear.x = min_m.v;
+        cmd_vel.cntl.angular.z = min_m.omega;
+        cmd_vel.mode = 11;
+        pub_twist.publish(cmd_vel);
+    }
+    if(min_ob_cost == 1e10)
+    {
+        cmd_vel.cntl.linear.x = 0.0;
+        cmd_vel.cntl.angular.z = 0.2;
+        cmd_vel.mode = 11;
+        pub_twist.publish(cmd_vel);
+    }
 
 }
 
@@ -203,15 +219,18 @@ float DWA::calc_obstacle_cost()
                 {
                     a = float(-world/2+i*resolution);//ロボットから見た座標系
                     b = float(-world/2+ j*resolution);
+
+                    distance = sqrt((state.x -a)*(state.x -a) + (state.y -b)*(state.y - b));
+                   // std::cout << "distance a" << distance << std::endl;
                     if(b < 0)
                     {
                         continue;
                     }
 
-                    if(distance <= roomba_radius)
+                    if(distance <= 0.3)
                     {
                         distance = sqrt((state.x -a)*(state.x -a) + (state.y -b)*(state.y - b));
-                        std::cout << "distance" << distance << std::endl;
+                     //   std::cout << "distance" << distance << std::endl;
                         /*geometry_msgs::PointStamped ob_check;
                         ob_check.point.x = a;
                         ob_check.point.y = b;
@@ -238,7 +257,11 @@ float DWA::calc_obstacle_cost()
 void DWA::roomba()
 {
     goal.resize(2);
-    float x = local_goal.pose.position.x - pose.pose.position.x;
+    tf::Quaternion quat(pose.pose.orientation.x,pose.pose.orientation.y,pose.pose.orientation.z,pose.pose.orientation.w);
+    tf::Matrix3x3(quat).getRPY(roll, pitch, yaw);
+    conversion_theta = -1* float(yaw-M_PI/2);
+
+   /* float x = local_goal.pose.position.x - pose.pose.position.x;
     float y = fabs(local_goal.pose.position.y - pose.pose.position.y);
 
     if(x < y)
@@ -251,11 +274,19 @@ void DWA::roomba()
         goal[1] = local_goal.pose.position.x - pose.pose.position.x ;
         goal[0] = fabs(local_goal.pose.position.y - pose.pose.position.y);
     }
+
     std::cout << "pose x" << pose.pose.position.x << std::endl;
     std::cout << "pose y" << pose.pose.position.y << std::endl;
     std::cout << "goal.x" << goal[0] << std::endl;
-    std::cout << "goal.y" << goal[1] << std::endl;
+    std::cout << "goal.y" << goal[1] << std::endl;*/
     dwa_control();
+    conversion_x = local_goal.pose.position.x - pose.pose.position.x;
+    conversion_y = local_goal.pose.position.y - pose.pose.position.y;
+
+    goal[0] =-1*( conversion_x*std::cos(conversion_theta) - conversion_y*std::sin(conversion_theta));
+
+    goal[1] = conversion_x*std::sin(conversion_theta)+ conversion_y*std::cos(conversion_theta);
+
     if(sqrt((state.x - goal[0]*state.x)*(state.x - goal[0]) + (state.y - goal[1]) * (state.y - goal[1])) <= roomba_radius)
     {
         //最終地点

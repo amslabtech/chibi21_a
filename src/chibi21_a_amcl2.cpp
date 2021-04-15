@@ -36,6 +36,7 @@ AMCL::AMCL():private_nh("~")
     pub_p_poses = nh.advertise<geometry_msgs::PoseArray>("p_poses",1);
 
     poses.header.frame_id = "map";
+    estimated_pose.header.frame_id = "map";
 
     odo_get = false;
     map_get = false;
@@ -116,7 +117,7 @@ void AMCL::p_motion_update()
     }
     previous_odo = current_odo;
 
-    ROS_INFO("motion_update");
+    // ROS_INFO("motion_update");
 }
 
 void AMCL::p_move(AMCL::Particle &p)
@@ -136,27 +137,30 @@ void AMCL::p_move(AMCL::Particle &p)
     quaternionMsgToTF(current_odo.pose.pose.orientation, current_orientation);
     quaternionMsgToTF(previous_odo.pose.pose.orientation, previous_orientation);
 
-    tf::Quaternion d_orientation = current_orientation * previous_orientation.inverse();
-    tf::Point d_position = current_position - previous_position;
-
-    tf::Point d_dist;
-    d_dist.setValue(d_position.length(),0.0,0.0);   //大きさ=移動距離の正面向きベクトル
-
-    std::normal_distribution<> move_dist_d(0.0,MOVE_DIST_COV);
-    tf::Point dist_dist;
-    dist_dist.setValue(move_dist_d(engine),0.0,0.0);   //移動距離をばらつかせるベクトル
-
-    std::normal_distribution<> move_yaw_d(0.0,MOVE_YAW_COV);    //角度をばらつか(ry
-    tf::Quaternion orientation_dist = tf::createQuaternionFromYaw(move_yaw_d(engine));
-
-    pointTFToMsg(p_position + quatRotate(p_orientation, d_dist + dist_dist), p.pose.pose.position);
-    quaternionTFToMsg(p_orientation*d_orientation*orientation_dist, p.pose.pose.orientation);
-
     if(current_orientation==previous_orientation && current_position==previous_position)
     {
         odo_move = false;
     }
     else odo_move = true;
+
+    if(odo_move)
+    {
+        tf::Quaternion d_orientation = current_orientation * previous_orientation.inverse();
+        tf::Point d_position = current_position - previous_position;
+
+        tf::Point d_dist;
+        d_dist.setValue(d_position.length(),0.0,0.0);   //大きさ=移動距離の正面向きベクトル
+
+        std::normal_distribution<> move_dist_d(0.0,MOVE_DIST_COV);
+        tf::Point dist_dist;
+        dist_dist.setValue(move_dist_d(engine),0.0,0.0);   //移動距離をばらつかせるベクトル
+
+        std::normal_distribution<> move_yaw_d(0.0,MOVE_YAW_COV);    //角度をばらつか(ry
+        tf::Quaternion orientation_dist = tf::createQuaternionFromYaw(move_yaw_d(engine));
+
+        pointTFToMsg(p_position + quatRotate(p_orientation, d_dist + dist_dist), p.pose.pose.position);
+        quaternionTFToMsg(p_orientation*d_orientation*orientation_dist, p.pose.pose.orientation);
+    }
 }
 
 void AMCL::p_measurement_update()
@@ -340,7 +344,7 @@ double AMCL::Particle::get_wall_range2(double laser_angle, nav_msgs::OccupancyGr
 
 void AMCL::resampling_process()
 {
-    if(calc_ess() > ESS_LIMEN)
+    if(calc_ess() < ESS_LIMEN*(double)N)
     {
         resampling();
     }
@@ -383,6 +387,52 @@ void AMCL::resampling()
     ROS_INFO("resampling");
 }
 
+void AMCL::pose_estimate()
+{
+    tf::Point sum_pos;
+    sum_pos.setZero();
+
+    // double sum_yaw = 0.0;
+
+    int max_w_num = 0;
+
+    double sum_w = 0.0;
+
+    for(int i = 0; i < (int)particles.size(); i++)
+    {
+        tf::Point p_position;
+        pointMsgToTF(particles[i].pose.pose.position, p_position);
+        sum_pos += p_position * particles[i].weight;
+
+        // double p_yaw = fix_yaw(tf::getYaw(particles[i].pose.pose.orientation));
+        // sum_yaw += p_yaw;
+
+        if(particles[max_w_num].weight < particles[i].weight) max_w_num = i;
+        sum_w += particles[i].weight;
+    }
+
+    // tf::Point ave_pos = sum_pos / (double)particles.size();
+    // pointTFToMsg(ave_pos, estimated_pose.pose.position);
+    //
+    // double ave_yaw = sum_yaw / (double)particles.size();
+    // tf::Quaternion ave_qua;
+    // ave_qua.setRPY(0.0,0.0,ave_yaw);
+    // quaternionTFToMsg(ave_qua, estimated_pose.pose.orientation);
+
+    tf::Point ave_pos = sum_pos / sum_w;
+    pointTFToMsg(ave_pos, estimated_pose.pose.position);
+    estimated_pose.pose.orientation = particles[max_w_num].pose.pose.orientation;   //最も尤度が高い向き
+
+    // std::cout<<estimated_pose.pose<<std::endl;
+}
+
+double AMCL::fix_yaw(double yaw)
+{
+    if(yaw < 0.0) return yaw + 2*M_PI;
+
+    return yaw;
+}
+
 void AMCL::p_disp_update()
 {
     // geometry_msgs::PoseArray disp_poses;
@@ -398,11 +448,6 @@ void AMCL::process()
     ros::Rate rate(hz);
     while(ros::ok())
     {
-        //pub_estimated_pose.publish(estimated_pose);
-        // ROS_INFO("hoge");
-        pub_p_poses.publish(poses);
-        // ROS_INFO("fuga");
-
         if(map_get && odo_get && scan_get)
         {
             p_motion_update();
@@ -410,9 +455,13 @@ void AMCL::process()
             {
                 p_measurement_update();
                 resampling_process();
+                pose_estimate();
             }
             p_disp_update();
         }
+
+        pub_estimated_pose.publish(estimated_pose);
+        pub_p_poses.publish(poses);
 
         ros::spinOnce();
         // ROS_INFO("foo");

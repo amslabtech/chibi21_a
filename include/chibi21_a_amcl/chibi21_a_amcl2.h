@@ -58,6 +58,8 @@ class AMCL
         void resampling_process();
         double calc_ess();
         void resampling();
+        void pose_estimate();
+        double fix_yaw(double yaw);
 
         void p_disp_update();   //rviz表示用
 
@@ -77,7 +79,7 @@ class AMCL
         double MAX_RANGE;       //壁までの距離を測る際の限界距離
         double CHECK_INTERVAL;  //壁を探す際の距離の間隔
         double M_WEIGHT;        //尤度計算に使う．現状意味なし
-        double M_COV;           //
+        double M_COV;           //小さいほど厳しくチェック
         double ESS_LIMEN;       //ESSのしきい値
 
         int hz;

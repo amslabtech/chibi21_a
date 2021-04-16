@@ -40,10 +40,10 @@ void Local_map::set_grid_map(const int& set_value,const float& radius)
 }
 int Local_map::verify_index(const int& i)
 {
-    if(i >= 0 && i <= 0)
+    if(i >= 300 && i <= 430)
     {
-         average =  (320+425)/2;
-         if(average < i)
+         average =  (300+430)/2;
+         if(average > i)
          {
             return 2;
          }
@@ -52,10 +52,10 @@ int Local_map::verify_index(const int& i)
              return 3;
          }
     }
-    if(i >= 500 && i <= 760)
+    if(i >= 660 && i <= 790)
     {
-        average = (500+760)/2;
-        if(average < i)
+        average = (660+790)/2;
+        if(average > i)
         {
             return 4;
         }
@@ -96,11 +96,11 @@ void Local_map::create_local_map()
         theta = (i-540)*laserscan.angle_increment;
         if(observation_radius < 0.3)
         {
-            std::cout <<"index" << i << std::endl;
+           // std::cout <<"index" << i << std::endl;
         }
         if(observation_radius < world/2)
         {
-            if(observation_radius < 0.01)
+            if(observation_radius < 0.05)
             {
                 //std::cout << "distance small" << observation_radius << std::endl;
                 set_value = 0;
@@ -115,8 +115,9 @@ void Local_map::create_local_map()
                         set_grid_map(set_value,observation_radius);
                         break;
                     case 2:
-                        index = 320 -alliance;
+                        index = 300 -alliance;
                         estimate_radius = laserscan.ranges[index];
+                       // std::cout << "radius 320:" << laserscan.ranges[index] << "\n"<<std::endl;;
                         if(estimate_radius < world/2)
                         {
                             set_value = 100;
@@ -130,8 +131,9 @@ void Local_map::create_local_map()
                         break;
 
                     case 3:
-                        index = 425 + alliance;
+                        index = 430 + alliance;
                         estimate_radius = laserscan.ranges[index];
+                       // std::cout << "radius 425: " << laserscan.ranges[index] << "\n" << std::endl;
                         if(estimate_radius < world/2)
                         {
                             set_value = 100;
@@ -146,7 +148,7 @@ void Local_map::create_local_map()
                         break;
 
                     case 4:
-                        index = 500 - alliance;
+                        index = 660 - alliance;
                         estimate_radius = laserscan.ranges[index];
                         if(estimate_radius < world/2)
                         {
@@ -161,7 +163,7 @@ void Local_map::create_local_map()
                         break;
 
                     case 5:
-                        index =  760 + alliance;
+                        index =  790 + alliance;
                         estimate_radius = laserscan.ranges[index];
                         if(estimate_radius < world/2)
                         {

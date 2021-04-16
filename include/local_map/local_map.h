@@ -18,7 +18,7 @@ private:
     int verify_index(const int&) ;
     int hz = 0;
     int set_value = 0;
-    int world = 0;
+    float world = 0;
     int row = 0;
     int column = 0;
     int base_angle = 0;

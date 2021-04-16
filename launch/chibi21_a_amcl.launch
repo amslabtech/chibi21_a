@@ -4,7 +4,7 @@
     <node pkg="map_server" name="map_server" type="map_server" args="$(arg map_file)" output="screen"/>
     <node pkg="chibi21_a" name="chibi21_a_amcl2" type="chibi21_a_amcl2" output="screen">
         <param name="hz" value="10" type="int"/>
-        <param name="N" value="200" type="int"/>
+        <param name="N" value="500" type="int"/>
         <param name="INIT_X" value="-10.0" type="double"/>
         <param name="INIT_Y" value="4.8" type="double"/>
         <param name="INIT_YAW" value="4.7" type="double"/>
@@ -18,7 +18,7 @@
         <param name="CHECK_INTERVAL" value="0.02" type="double"/>
         <param name="M_WEIGHT" value="1.0" type="double"/>
         <param name="M_COV" value="0.05" type="double"/>
-        <param name="ESS_LIMEN" value="0.8" type="double"/>
+        <param name="ESS_LIMEN" value="0.9" type="double"/>
         <param name="ALPHA_SLOW" value="0.1" type="double"/>
         <param name="ALPHA_FAST" value="0.5" type="double"/>
         <param name="SLOW_FAST_RATIO" value="0.4" type="double"/>

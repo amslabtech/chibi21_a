@@ -11,6 +11,7 @@ Local_map::Local_map():private_nh("~")
     private_nh.param("hz",hz,{1});
     private_nh.param("world",world,{5});
     private_nh.param("alliance",alliance,{5});
+    private_nh.param("resolution",resolution,{0.05});
 
     sub_scan = nh.subscribe("scan",10,&Local_map::scan_callback,this);
     pub_local_map = nh.advertise<nav_msgs::OccupancyGrid>("local_map",1);
@@ -31,7 +32,7 @@ void Local_map::set_grid_map(const int& set_value,const float& radius)
         /*if(j <= roomba_radius) grid_map[row/2 +(int)((j*std::sin(theta))/resolution)][column/2 + (int)((j*std::cos(theta))/resolution)] = -1;*/
         grid_map[row/2 +round((j*std::sin(theta))/resolution)][column/2 + round((j*std::cos(theta))/resolution)] = 0;
     }
-    for(float x=world/2;  x>radius ; x-=resolution)
+    for(float x=world/2;  x>radius+0.1 ; x-=resolution)
     {
         grid_map[row/2 +round((x*std::sin(theta))/resolution)][column/2 + round((x*std::cos(theta))/resolution)] = -1;
     }
@@ -39,7 +40,7 @@ void Local_map::set_grid_map(const int& set_value,const float& radius)
 }
 int Local_map::verify_index(const int& i)
 {
-    if(i >= 320 && i <= 425)
+    if(i >= 0 && i <= 0)
     {
          average =  (320+425)/2;
          if(average < i)
@@ -51,9 +52,9 @@ int Local_map::verify_index(const int& i)
              return 3;
          }
     }
-    if(i >= 615 && i <= 750)
+    if(i >= 500 && i <= 760)
     {
-        average = (615+750)/2;
+        average = (500+760)/2;
         if(average < i)
         {
             return 4;
@@ -93,7 +94,7 @@ void Local_map::create_local_map()
     {
         observation_radius = laserscan.ranges[i];
         theta = (i-540)*laserscan.angle_increment;
-        if(observation_radius < 1.0)
+        if(observation_radius < 0.3)
         {
             std::cout <<"index" << i << std::endl;
         }
@@ -101,6 +102,7 @@ void Local_map::create_local_map()
         {
             if(observation_radius < 0.01)
             {
+                //std::cout << "distance small" << observation_radius << std::endl;
                 set_value = 0;
                 set_grid_map(set_value,world/2);
             }
@@ -144,7 +146,7 @@ void Local_map::create_local_map()
                         break;
 
                     case 4:
-                        index = 615 - alliance;
+                        index = 500 - alliance;
                         estimate_radius = laserscan.ranges[index];
                         if(estimate_radius < world/2)
                         {
@@ -159,7 +161,7 @@ void Local_map::create_local_map()
                         break;
 
                     case 5:
-                        index =  750 + alliance;
+                        index =  760 + alliance;
                         estimate_radius = laserscan.ranges[index];
                         if(estimate_radius < world/2)
                         {

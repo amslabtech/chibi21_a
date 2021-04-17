@@ -227,7 +227,7 @@ float DWA::calc_obstacle_cost()
                         continue;
                     }
 
-                    if(distance <= 0.15)
+                    if(distance <= 0.2)
                     {
                         distance = sqrt((state.x -a)*(state.x -a) + (state.y -b)*(state.y - b));
                      //   std::cout << "distance" << distance << std::endl;

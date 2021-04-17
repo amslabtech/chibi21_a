@@ -52,7 +52,14 @@ void Local_Goal_Creator::set_the_next_goal(){
 
     if(min_index+reselection_add_val > global_path.poses.size() -1)
     {
-        local_goal = global_path.poses[global_path.poses.size() - 1];
+        if(min_index == global_path.poses.size()- 1)
+        {
+            reach_final_goal = true;
+        }
+        else
+        {
+            local_goal = global_path.poses[global_path.poses.size() - 1];
+        }
     }
     else
     {
@@ -71,9 +78,14 @@ void Local_Goal_Creator::set_the_next_goal(){
         }
     }*/
     local_goal.header.frame_id = "map";
-    pub_local_goal.publish(local_goal);
-
+    if(!reach_final_goal) pub_local_goal.publish(local_goal);
+    else
+    {
+        local_goal = global_path.poses[global_path.poses.size() - 1];
+        pub_local_goal.publish(local_goal);
+    }
 }
+
 void Local_Goal_Creator::process(){
     ros::Rate loop_rate(hz);
     while(ros::ok()){

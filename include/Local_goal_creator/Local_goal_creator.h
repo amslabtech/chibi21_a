@@ -25,6 +25,7 @@ class Local_Goal_Creator{
         float max_distance = 0.0;
         bool got_global_path = false;
         bool got_current_pose = false;
+        bool reach_final_goal = false;
 
         ros::NodeHandle nh;
         ros::NodeHandle private_nh;

@@ -13,7 +13,7 @@ Local_map::Local_map():private_nh("~")
     private_nh.param("alliance",alliance,{5});
     private_nh.param("resolution",resolution,{0.05});
     private_nh.param("pillar1",pillar1,{300});
-    private_nh.param("pillar2",pillar2,{400});
+    private_nh.param("pillar2",pillar2,{460});
     private_nh.param("pillar3",pillar3,{600});
     private_nh.param("pillar4",pillar4,{760});
     sub_scan = nh.subscribe("scan",10,&Local_map::scan_callback,this);
@@ -179,7 +179,7 @@ void Local_map::create_local_map()
         {
             if(observation_radius < 0.01)
             {
-                std::cout << "distance small" << observation_radius << std::endl;
+               // std::cout << "distance small" << observation_radius << std::endl;
                 set_value = 0;
                 set_grid_map(set_value,world/2);
             }
@@ -281,7 +281,7 @@ void Local_map::create_local_map()
     for(int i = min_index;i<max_index; i++)
     {
         set_value = 0;
-        min_radius = 0.25;
+        min_radius = 0.3;
         theta = (i-540)*laserscan.angle_increment;
         set_ignore_grid(set_value,min_radius);
     }

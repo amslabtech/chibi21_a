@@ -143,6 +143,8 @@ add_executable(local_map src/local_map.cpp)
 add_executable(roomba_dwa src/roomba_dwa.cpp)
 add_executable(localizer src/localizer.cpp)
 add_executable(localizer2 src/localizer.cpp)
+add_executable(chibi21_a_amcl src/chibi21_a_amcl.cpp)
+add_executable(chibi21_a_amcl2 src/chibi21_a_amcl2.cpp)
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
 ## target back to the shorter version for ease of user use
@@ -157,6 +159,8 @@ add_dependencies(local_map ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED
 add_dependencies(roomba_dwa ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(localizer ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(localizer2 ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(chibi21_a_amcl ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(chibi21_a_amcl2 ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 ## Specify libraries to link a library or executable target against
 target_link_libraries(astar ${catkin_LIBRARIES})
 target_link_libraries(Local_goal_creator ${catkin_LIBRARIES})
@@ -164,6 +168,8 @@ target_link_libraries(local_map ${catkin_LIBRARIES})
 target_link_libraries(roomba_dwa ${catkin_LIBRARIES})
 target_link_libraries(localizer ${catkin_LIBRARIES})
 target_link_libraries(localizer2 ${catkin_LIBRARIES})
+target_link_libraries(chibi21_a_amcl ${catkin_LIBRARIES})
+target_link_libraries(chibi21_a_amcl2 ${catkin_LIBRARIES})
 
 #############
 ## Install ##

@@ -215,7 +215,7 @@ float DWA::calc_obstacle_cost()
         {
             for(int j=y-safemass_y; j<y+safemass_y; j++)
             {
-                if(i > 0 && j > 0 && (map[i][j] == 100 || map[i][j] == -1))
+                if(i > 0 && j > 0 && (map[i][j] == 100 /*|| map[i][j] == -1*/))
                 {
                     a = float(-world/2+i*resolution);//ロボットから見た座標系
                     b = float(-world/2+ j*resolution);

@@ -52,7 +52,7 @@ void Local_Goal_Creator::set_the_next_goal(){
 
     if(min_index+reselection_add_val > global_path.poses.size() -1)
     {
-        if(min_index == global_path.poses.size()- 1)
+        if(min_index > global_path.poses.size()- 10)
         {
             reach_final_goal = true;
         }

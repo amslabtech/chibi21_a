@@ -59,7 +59,7 @@ void Local_map::set_grid_map(const int& set_value,const float& radius)
         /*if(j <= roomba_radius) grid_map[row/2 +(int)((j*std::sin(theta))/resolution)][column/2 + (int)((j*std::cos(theta))/resolution)] = -1;*/
         grid_map[ix][iy] = 0;
     }
-    for(float x=world/2;  x>radius+0.1 ; x-=resolution)
+    for(float x=world/2;  x>radius+0.2 ; x-=resolution)
     {
         int ix = (int)(row/2 +(x*std::sin(theta))/resolution);
         int iy = (int)(column/2 + (x*std::cos(theta))/resolution);

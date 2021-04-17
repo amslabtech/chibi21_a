@@ -4,6 +4,10 @@
         <param name="hz" value="10" />
         <param name="world" value="5" />
         <param name="allience" value="5" />
+        <param name="pillar1" value="300" />
+        <param name="pillar2" value="400" />
+        <param name="pillar3" value="700" />
+        <param name="pillar4" value="800" />
     </node>
     <node pkg="urg_node" name="urg_node" type="urg_node">
     <param name="serial_port" value="/dev/ttyACM0"/>

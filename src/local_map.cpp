@@ -12,7 +12,10 @@ Local_map::Local_map():private_nh("~")
     private_nh.param("world",world,{5});
     private_nh.param("alliance",alliance,{5});
     private_nh.param("resolution",resolution,{0.05});
-
+    private_nh.param("pillar1",pillar1,{300});
+    private_nh.param("pillar2",pillar2,{400});
+    private_nh.param("pillar3",pillar3,{600});
+    private_nh.param("pillar4",pillar4,{760});
     sub_scan = nh.subscribe("scan",10,&Local_map::scan_callback,this);
     pub_local_map = nh.advertise<nav_msgs::OccupancyGrid>("local_map",1);
 }
@@ -25,6 +28,57 @@ void Local_map::scan_callback(const sensor_msgs::LaserScan::ConstPtr &msg)
 }
 
 void Local_map::set_grid_map(const int& set_value,const float& radius)
+{
+    int x  =(int)(row/2 + radius*std::sin(theta)/resolution);
+    int y = (int)(column/2 + radius*std::cos(theta)/resolution);
+    if(x >= 100)
+    {
+        x = 99;
+    }
+    if(y >= 100)
+    {
+        y = 99;
+    }
+
+    grid_map[x][y] = set_value;
+
+    for(float j=0.2 ;j<radius; j+=resolution)
+    {
+
+        int ix = (int)(row/2 +(j*std::sin(theta))/resolution);
+        int iy = (int)(column/2 + (j*std::cos(theta))/resolution);
+        if(ix >= 100)
+        {
+            ix = 99;
+        }
+        if(iy >= 100)
+        {
+            iy = 99;
+        }
+       // std::cout << "x,y:" << x <<"," << y << std::endl;
+        /*if(j <= roomba_radius) grid_map[row/2 +(int)((j*std::sin(theta))/resolution)][column/2 + (int)((j*std::cos(theta))/resolution)] = -1;*/
+        grid_map[ix][iy] = 0;
+    }
+    for(float x=world/2;  x>radius+0.1 ; x-=resolution)
+    {
+        int ix = (int)(row/2 +(x*std::sin(theta))/resolution);
+        int iy = (int)(column/2 + (x*std::cos(theta))/resolution);
+        if(ix >= 100)
+        {
+            ix = 99;
+        }
+        if(iy >= 100)
+        {
+            iy = 99;
+        }
+       // std::cout<< "ix,iy:" << ix << "," << iy << std::endl;
+        grid_map[ix][iy] = -1;
+
+    }
+
+}
+
+void Local_map::set_ignore_grid(const int& set_value,const float& radius)
 {
     int x  =(int)(row/2 + radius*std::sin(theta)/resolution);
     int y = (int)(column/2 + radius*std::cos(theta)/resolution);
@@ -52,33 +106,16 @@ void Local_map::set_grid_map(const int& set_value,const float& radius)
         {
             iy = 99;
         }
-       // std::cout << "x,y:" << x <<"," << y << std::endl;
-        /*if(j <= roomba_radius) grid_map[row/2 +(int)((j*std::sin(theta))/resolution)][column/2 + (int)((j*std::cos(theta))/resolution)] = -1;*/
         grid_map[ix][iy] = 0;
     }
-    for(float x=world/2;  x>radius+0.1 ; x-=resolution)
-    {
-        int ix = row/2 +round((x*std::sin(theta))/resolution);
-        int iy = column/2 + round((x*std::cos(theta))/resolution);
-        if(ix >= 100)
-        {
-            ix = 99;
-        }
-        if(iy >= 100)
-        {
-            iy = 99;
-        }
-       // std::cout<< "ix,iy:" << ix << "," << iy << std::endl;
-        grid_map[ix][iy] = -1;
-
-    }
-
 }
+
+
 int Local_map::verify_index(const int& i)
 {
-    if(i >= 300 && i <=430)
+    if(i >=pillar1  && i <=pillar2)
     {
-         average =  (300+430)/2;
+         average =  (pillar1+pillar2)/2;
          if(average > i)
          {
             return 2;
@@ -88,9 +125,9 @@ int Local_map::verify_index(const int& i)
              return 3;
          }
     }
-    if(i >= 660 && i <= 760)
+    if(i >= pillar3 && i <= pillar4)
     {
-        average = (660+760)/2;
+        average = (pillar3+pillar4)/2;
         if(average > i)
         {
             return 4;
@@ -126,7 +163,10 @@ void Local_map::create_local_map()
         }
     }*/
 
-    for(int i=60; i<=1020; i++)
+    max_index = (int)(((M_PI/2)/laserscan.angle_increment)+540);
+    min_index = (int)(((-M_PI/2)/laserscan.angle_increment)+540);
+
+    for(int i=min_index; i<=max_index; i++)
     {
 
         observation_radius = laserscan.ranges[i];
@@ -152,7 +192,7 @@ void Local_map::create_local_map()
                         set_grid_map(set_value,observation_radius);
                         break;
                     case 2:
-                        index = 300 -alliance;
+                        index = pillar1 -alliance;
                         estimate_radius = laserscan.ranges[index];
                        // std::cout << "radius 320:" << laserscan.ranges[index] << "\n"<<std::endl;;
                         if(estimate_radius < world/2)
@@ -168,7 +208,7 @@ void Local_map::create_local_map()
                         break;
 
                     case 3:
-                        index = 430 + alliance;
+                        index = pillar2 + alliance;
                         estimate_radius = laserscan.ranges[index];
                        // std::cout << "radius 425: " << laserscan.ranges[index] << "\n" << std::endl;
                         if(estimate_radius < world/2)
@@ -185,7 +225,7 @@ void Local_map::create_local_map()
                         break;
 
                     case 4:
-                        index = 660 - alliance;
+                        index = pillar3 - alliance;
                         estimate_radius = laserscan.ranges[index];
                         if(estimate_radius < world/2)
                         {
@@ -200,7 +240,7 @@ void Local_map::create_local_map()
                         break;
 
                     case 5:
-                        index =  760 + alliance;
+                        index =  pillar4 + alliance;
                         estimate_radius = laserscan.ranges[index];
                         if(estimate_radius < world/2)
                         {
@@ -228,6 +268,25 @@ void Local_map::create_local_map()
         }
 
     }
+
+    /*for(int i = row/2-min_index; i < row/2 + min_index ; i++)
+    {
+        for(int j = column/2-min_index;j <column/2 +min_index; j++)
+        {
+
+        }
+    }*/
+
+    //ルンバの半径以下はカット
+    for(int i = min_index;i<max_index; i++)
+    {
+        set_value = 0;
+        min_radius = 0.25;
+        theta = (i-540)*laserscan.angle_increment;
+        set_ignore_grid(set_value,min_radius);
+    }
+
+
 
     nav_msgs::OccupancyGrid local_map;
     local_map.info.resolution = resolution;

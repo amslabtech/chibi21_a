@@ -15,6 +15,7 @@ private:
     void scan_callback(const sensor_msgs::LaserScan::ConstPtr &);
     void create_local_map();
     void set_grid_map(const int& set_value,const float& radius);
+    void set_ignore_grid(const int& set_value,const float& radius);
     int verify_index(const int&) ;
     int hz = 0;
     int set_value = 0;
@@ -26,14 +27,19 @@ private:
     int min_index = 0;
     int alliance = 0;
     int index = 0;
+    int pillar1 = 0;
+    int pillar2 = 0;
+    int pillar3 = 0;
+    int pillar4 = 0;
     float roomba_radius = 0.3;//ルンバの半径 30cm
-    float observation_radius = 0;
-    float degree = 0;
+    float observation_radius = 0.0;
+    float degree = 0.0;
     float resolution = 0.02;
     float average = 0.0;
-    float radius = 0;
-    float theta = 0;
+    float radius = 0.0;
+    float theta = 0.0;
     float max_radius = 0.0;
+    float min_radius = 0.0;
     float estimate_radius = 0.0;
     float angle_min =0;
     float angle_max = 0;

@@ -62,10 +62,10 @@ private:
     float min_speed = 0; //[m/s]
     float max_accel = 1;
     float v_reso = 0.05;
-    float predict_time = 2.0;
+    float predict_time =3.0;
     float max_yawrate = 40.0*M_PI/180; //<=1
     float max_dyawrate = 40.0*M_PI/180; //<=1
-    float omega_reso = 10*M_PI/180;
+    float omega_reso =2*M_PI/180;
     float heading_theta = 0;
     float heading=0;
     float dist=0;

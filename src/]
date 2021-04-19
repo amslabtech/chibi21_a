@@ -116,7 +116,7 @@ void DWA::roomba()
     // min_obstacle = 20;
     // printf("1\n");
     for(float a=v2_min; a<=v2_max; a+=v_reso) {//次の時刻における速度v2
-        std::cout<<"omega2_max,omega2_min,omega_reso"<<omega2_max<<","<<omega2_min<<","<<omega_reso<<std::endl;
+        // std::cout<<"omega2_max,omega2_min,omega_reso"<<omega2_max<<","<<omega2_min<<","<<omega_reso<<std::endl;
         for(float b=omega2_min; b<=omega2_max; b+=omega_reso) {
             // std::cout<<"loop2"<<std::endl;
             velocity = a/v2_max;
@@ -135,14 +135,14 @@ void DWA::roomba()
                 // printf("map:%d\n",map[i][j]);
                 // if(x<0 || y<0) continue;
                 // printf("x,y:%d, %d\n", x,y);
-                if(map[x][y] != 0 ) {
+                if(map[x][y] != 0 && time <= 1.5) {
                     evaluation=0;
                     break;
                 }
                 if(time>=predict_time-0.01) {
-                    heading_theta = b*time-std::atan2(local_goal.pose.position.y,local_goal.pose.position.x);
-                    heading = std::cos(heading_theta);
-                    // printf("x,y:%f,%f,%f,%f,%f\n",local_goal.pose.position.x,local_goal.pose.position.y,x2,y2,heading_theta);
+                    heading_theta = std::atan2(local_goal.pose.position.x,local_goal.pose.position.y) - std::atan2(x2,y2);
+                    heading = (std::cos(heading_theta)+1)/2;
+                    printf("x,y:%f,%f,%f,%f\n",local_goal.pose.position.x,local_goal.pose.position.y,x2,y2);
                         //heading = std::atan2(((float)y2-local_goal.pose.positon.y),((float)x2-local_goal.pose.position.x));
                         // if(heading<0) heading *=-1;
                 }
@@ -150,15 +150,21 @@ void DWA::roomba()
                 for(int i=x-safe_space; i<x+safe_space; ++i) {
                     for(int j=y-safe_space; j<y+safe_space; ++j){
                         if(j<=row/2+3 || i==50 || j>=80 || i<=10 || i>=90) continue;
+                            // if(j<row/2) continue;
                             // printf("i,j,x,y:%d,%d,%d,%d",i,j,x,y);
+                            // printf("map:%d\n",map[i][j]);
                             // if(map[i][j] == 0) obstacle=20;
                         if(map[i][j] == 100 || map[i][j] == -1) {
+                               // if(j<=y) continue;
                                // printf("i,j,x,y,map:%d,%d,%d,%d,%d\n",i,j,x,y,map[i][j]);
                             obstacle = std::sqrt((i-x)*(i-x)+(j-y)*(j-y));
+                                // if(obstacle==0) continue;
                                 // printf("obstacle:%f\n",obstacle);
                         }
+                            // printf("obstacle:%f\n",obstacle);
                         if(min_obstacle > obstacle) {
                             min_obstacle = obstacle;
+                                // printf("obstacle:%f\n",obstacle);
                                 // printf("i,j,x,y:%d,%d,%d,%d\n",i,j,x,y);
                         }
                     }
@@ -171,25 +177,23 @@ void DWA::roomba()
             // printf("min_obs:%f\n",min_obstacle);
             dist = min_obstacle/(safe_space*1.414);
             // printf("dist:%f\n",dist);
-            // printf("velocity,heading,dist,eva:%f,%f,%f,%f\n", velocity,heading,dist,eva]);
-            // evaluation = speed_gain * velocity + to_goal_gain * heading;
+            printf("velocity,heading,dist:%f,%f,%f\n", velocity,heading,dist);
             evaluation = to_goal_gain * heading + robot_distance_gain * dist + speed_gain * velocity;
-
-            printf("velocity,heading,dist,eva:%f,%f,%f,%f\n", velocity,heading,dist,evaluation);
+            // evaluation = speed_gain * velocity + to_goal_gain * heading;
             // evaluation = robot_distance_gain * dist;
             // evaluation = speed_gain * velocity;
-            printf("eva:%f\n",evaluation);
+            // printf("eva:%f\n",evaluation);
             if(max_evaluation < evaluation) {
                 max_evaluation = evaluation;
                 fin_v = a;
                 fin_omega = b;
-                // printf("max_evaluation,v,omega:%f,%f,%f\n", max_evaluation,a,b);
+                // printf("max_evaluation:%f\n", max_evaluation);
             }
         }
     }
     v.cntl.linear.x = fin_v;
     v.cntl.angular.z = fin_omega;
-    printf("fin_v,fin_omega:%f,%f\n", fin_v,fin_omega);
+    // printf("fin_v,fin_omega:%f,%f\n", fin_v,fin_omega);
     nav_msgs::Path best_predict_path;
     for(float time=0; time<=predict_time;time+=0.1) {
         fin_x = fin_v*time*std::sin(fin_omega*time);

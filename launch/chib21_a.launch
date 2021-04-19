@@ -22,8 +22,8 @@
     <node pkg = "chibi21_a" name="chibi21_a_amcl2" type="chibi21_a_amcl2" >
         <param name="hz" value="10" type="int"/>
         <param name="N" value="500" type="int"/>
-        <param name="INIT_X" value="5.0" type="double"/>
-        <param name="INIT_Y" value="7.0" type="double"/>
+        <param name="INIT_X" value="6.0" type="double"/>
+        <param name="INIT_Y" value="8.0" type="double"/>
         <param name="INIT_YAW" value="1.57" type="double"/>
         <param name="INIT_X_COV" value="0.5" type="double"/>
         <param name="INIT_Y_COV" value="0.5" type="double"/>

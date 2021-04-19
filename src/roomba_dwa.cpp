@@ -1,33 +1,37 @@
-#include<roomba_dwa/roomba_dwa.h>
-#include<stdio.h>
+#include<roomba_dwa.h>
 //#include<math.h>
 
-DWA::DWA():private_nh("~")
+DWA::DWA():private_nh("~"), map(mass, std::vector<int>(mass))
 {
     private_nh.param("hz",hz,{10});
-    private_nh.param("dt",dt,{0.5});
-    private_nh.param("to_goal_gain",to_goal_gain,{1.0});
-    private_nh.param("robot_distance_gain",robot_distance_gain,{1.0});
-    private_nh.param("speed_gain",speed_gain,{1.0});
-    private_nh.param("v_reso",v_reso,{0.1});
-    private_nh.param("omega_reso",omega_reso,{0.1});
-    private_nh.param("max_dyawrate",max_dyawrate,{10});//degree
-    private_nh.param("max_accel",max_accel,{0.4});
-    private_nh.param("safemass_x",safemass_x,{10});
-    private_nh.param("safemass_y",safemass_y,{10});
-    private_nh.param("predict_time",predict_time,{3.0});
-
-    max_dyawrate *= (M_PI/180);
-
-    sub_local_goal = nh.subscribe("local_goal",10,&DWA::local_goal_callback,this);
-    sub_pose = nh.subscribe("estimated_pose",10,&DWA::pose_callback,this);
-    sub_local_map = nh.subscribe("local_map",10,&DWA::local_map_callback,this);//local_map
-
+    private_nh.param("dt",dt,{0.1});
+    // printf("gg\n");
+    //sub_path = nh.subscribe("",10,&DWA::path_callback,this);
+    //sub_range = nh.subscribe("/scan",10,&DWA::ranges_callback,this);
+    sub_point = nh.subscribe("/roomba/odometry",10,&DWA::point_callback,this);
+    sub_local_map = nh.subscribe("/local_map",10,&DWA::local_map_callback,this);//local_map
+    sub_local_goal = nh.subscribe("/local_goal",10,&DWA::local_goal_callback,this);
+    sub_estimated_pose = nh.subscribe("/estimated_pose",10,&DWA::estimated_pose_callback,this);
     pub_twist = nh.advertise<roomba_500driver_meiji::RoombaCtrl>("/roomba/control",1);
-    pub_predict_path = nh.advertise<nav_msgs::Path>("predict_path",1);//rvizにひげを配信するためのもの
-    pub_goal_point = nh.advertise<geometry_msgs::PointStamped>("goal_point",1);//goalをrvizに配信
+    pub_goal_point = nh.advertise<geometry_msgs::PointStamped>("goal_point",1);
     pub_best_predict_path = nh.advertise<nav_msgs::Path>("best_predict_path",1);//ベストなパスをrvizに配信
-    //pub_ob_check = nh.advertise<geometry_msgs::PointStamped>("ob_check",1);//回避すべき障害物をrvizに配信
+    pub_ob_check = nh.advertise<geometry_msgs::PointStamped>("ob_check",1);//回避すべき障害物をrvizに配信
+    pub_predict_path = nh.advertise<nav_msgs::Path>("predict_path",1);
+    // std::cout << "start!!" << std::endl;
+    // printf("gg\n");
+
+}
+
+void DWA::point_callback(const nav_msgs::Odometry::ConstPtr &msg)
+{
+    point = *msg;
+}
+
+void DWA::local_map_callback(const nav_msgs::OccupancyGrid::ConstPtr &msg)
+{
+
+    local_map = *msg;
+    if(local_map.data.size()!=0) set_map();
 }
 
 void DWA::local_goal_callback(const geometry_msgs::PoseStamped::ConstPtr &msg)
@@ -35,264 +39,169 @@ void DWA::local_goal_callback(const geometry_msgs::PoseStamped::ConstPtr &msg)
     local_goal = *msg;
 }
 
-void DWA::local_map_callback(const nav_msgs::OccupancyGrid::ConstPtr &msg)
+void DWA::estimated_pose_callback(const geometry_msgs::PoseStamped::ConstPtr &msg)
 {
-    local_map = *msg;
-    if(local_map.data.size() != 0) set_map();
-}
-
-void DWA::pose_callback(const geometry_msgs::PoseStamped::ConstPtr &msg)
-{
-    pose = *msg;
+    estimated_pose = *msg;
 }
 
 void DWA::set_map()
 {
-    //std::cout << "received map" << std::endl;
     column= local_map.info.width;
     row = local_map.info.height;
     resolution = local_map.info.resolution;
+    // map.clear();
     map.resize(row,std::vector<int>(column));
 
-    for(int i=0; i<row; i++)
-    {
-        for(int j=0; j<column; j++)
-        {
+// printf("ff\n");
+    for(int i=0; i<row; i++) {
+        for(int j=0; j<column; j++) {
             map[i][j] = local_map.data[j*row+i];
+            // printf("map:%d\n", map[i][j]);
         }
     }
-
     receive_local_map = true;
 }
 
-void DWA::calc_dynamic_window(const Roomba_state &state)
-{
-    std::vector<float> Vs = {min_speed,max_speed,-max_yawrate,max_yawrate};
-    std::vector<float> Vd = {
-        state.v - max_accel,
-        state.v + max_accel,
-        state.omega - max_dyawrate,
-        state.omega + max_dyawrate,
-    };
-    dw = {
-        std::max(Vs[0],Vd[0]),
-        std::min(Vs[1],Vd[1]),
-        std::max(Vs[2],Vd[2]),
-        std::min(Vs[3],Vd[3]),
-    };
-}
-
-void DWA::calc_trajectory(const float &v, const float &y)
-{
-    traj.clear();
-    predict_path.poses.clear();
-    state = {0,0,0.0,0.0,0.0};
-    traj.push_back(state);
-    for(float time =0; time <= predict_time; time+=dt)
-    {
-        state.yaw += y * dt;
-        state.x += v * std::sin(state.yaw) * dt;
-        state.y += v * std::cos(state.yaw) * dt;
-        state.v = v;
-        state.omega = y;
-        traj.push_back(state);
-
-        geometry_msgs::PoseStamped path_point;
-        path_point.pose.position.x = state.x;
-        path_point.pose.position.y = state.y;
-        predict_path.poses.push_back(path_point);
-    }
-
-    predict_path.header.frame_id = "base_link";
-    pub_predict_path.publish(predict_path);
-}
-
-float DWA::calc_to_goal_cost()
-{
-    theta = std::atan2(goal[0],goal[1]) - std::atan2(traj.back().x,traj.back().y);
-    cost = fabs(std::atan2(sin(theta),cos(theta)));
-
-    geometry_msgs::PointStamped goal_point;
-    goal_point.header.frame_id = "base_link";
-    goal_point.point.x = (double)goal[0];
-    goal_point.point.y = (double)goal[1];
-    pub_goal_point.publish(goal_point);
-
-    return cost;
-}
-
-void DWA::calc_final_input()
-{
-    min_cost = 1e10;
-    best_traj.clear();
-    final_cost = 0.0;
-
-    for(float v=dw[0]; v<=dw[1]; v+=v_reso)
-    {
-        for(float y=dw[2]; y<=dw[3]; y+=omega_reso)
-        {
-            calc_trajectory(v,y);
-            to_goal_cost = calc_to_goal_cost();
-            speed_cost = max_speed - traj.back().v;
-            ob_cost = calc_obstacle_cost();
-           // std::cout << "ob_cost" << ob_cost << std::endl;
-            final_cost = to_goal_gain*to_goal_cost + speed_gain*speed_cost +  robot_distance_gain*ob_cost;
-            if(min_cost >= final_cost)
-            {
-                min_cost = final_cost;
-                min_m.v = v;
-                min_m.omega = y;
-                best_traj = traj;
-            }
-            if(min_ob_cost >= ob_cost)
-            {
-                min_ob_cost = ob_cost;
-            }
-
-        }
-    }
-   // std::cout << "min_m,v,y" << min_m.v<<"," << min_m.omega << std::endl;
-    get_best_traj();
-}
-
-void DWA::get_best_traj()
-{
-    best_predict_path.poses.clear();
-    for(auto& state : best_traj)
-    {
-        geometry_msgs::PoseStamped best_path_point;
-        best_path_point.pose.position.x = state.x;
-        best_path_point.pose.position.y = state.y;
-        best_predict_path.poses.push_back(best_path_point);
-    }
-    best_predict_path.header.frame_id = "base_link";
-    pub_best_predict_path.publish(best_predict_path);
-
-}
-
-void DWA::dwa_control()
-{
-    state = {0,0,0.0,0.0,0.0};
-
-    calc_dynamic_window(state);
-    calc_final_input();
-    roomba_500driver_meiji::RoombaCtrl cmd_vel;
-    if(wait < 50)
-    {
-        cmd_vel.cntl.linear.x = 0.0;
-        cmd_vel.mode = 11;
-        pub_twist.publish(cmd_vel);
-        wait++;
-    }
-    else
-    {
-        cmd_vel.cntl.linear.x = min_m.v;
-        cmd_vel.cntl.angular.z = min_m.omega;
-        cmd_vel.mode = 11;
-        pub_twist.publish(cmd_vel);
-    }
-    if(min_ob_cost == 1e10)
-    {
-        cmd_vel.cntl.linear.x = 0.0;
-        cmd_vel.cntl.angular.z = 0.2;
-        cmd_vel.mode = 11;
-        pub_twist.publish(cmd_vel);
-    }
-
-}
-
-float DWA::calc_obstacle_cost()
-{
-    minr = 1e5;
-    max_cost = 0.0;
-
-    for(auto& state : traj)
-    {
-        int x = (int)((state.x - (-world/2)) /resolution);
-        int y = (int)((state.y - (-world/2)) /resolution);
-
-        for(int i=x-safemass_x; i<x+safemass_x; i++)
-        {
-            for(int j=y-safemass_y; j<y+safemass_y; j++)
-            {
-                if(i > 0 && j > 0 && (map[i][j] == 100 /*|| map[i][j] == -1*/))
-                {
-                    a = float(-world/2+i*resolution);//ロボットから見た座標系
-                    b = float(-world/2+ j*resolution);
-
-                    distance = sqrt((state.x -a)*(state.x -a) + (state.y -b)*(state.y - b));
-                   // std::cout << "distance a" << distance << std::endl;
-                    if(b < 0)
-                    {
-                        continue;
-                    }
-
-                    if(distance <= 0.2)
-                    {
-                        distance = sqrt((state.x -a)*(state.x -a) + (state.y -b)*(state.y - b));
-                     //   std::cout << "distance" << distance << std::endl;
-                        /*geometry_msgs::PointStamped ob_check;
-                        ob_check.point.x = a;
-                        ob_check.point.y = b;
-
-                        //std::cout << "distance" << distance << std::endl;
-                        ob_check.header.frame_id = "base_link";
-                        pub_ob_check.publish(ob_check);*/
-
-                        max_cost = 1e10;
-                    }
-                    if(minr >= distance)
-                    {
-                        minr = distance;
-                    }
-                }
-            }
-        }
-    }
-
-    if(max_cost > minr) return max_cost;
-    else return 1.0/minr;
-}
+/*
+            map[safemass_y][safemass_x] = 0;//白
+            map[obstacle_y][obstacle_x] = 100;//黒
+*/
 
 void DWA::roomba()
 {
-    goal.resize(2);
-    tf::Quaternion quat(pose.pose.orientation.x,pose.pose.orientation.y,pose.pose.orientation.z,pose.pose.orientation.w);
+    nav_msgs::Path predict_path;
+    roomba_500driver_meiji::RoombaCtrl v;
+    old_pose_x = now_pose_x;
+    old_pose_y = now_pose_y;
+    // now_pose_x = estimated_pose.pose.position.x;
+    // now_pose_y = estimated_pose.pose.position.y;
+    // printf("x,y:%f,%f\n",now_pose_x,now_pose_y);
+    now_pose_x = 0;
+    now_pose_y = 0;
+    now_speed = std::sqrt((now_pose_x - old_pose_x) * (now_pose_x - old_pose_x) + (now_pose_y - old_pose_y) * (now_pose_y - old_pose_y)) / dt;
+    v2_max = now_speed + max_accel * dt;
+    v2_min = now_speed - max_accel * dt;
+
+    geometry_msgs::PointStamped goal_point;
+    goal_point.header.frame_id="base_link";
+    goal_point.point.x = local_goal.pose.position.x;
+    goal_point.point.y = local_goal.pose.position.y;
+    pub_goal_point.publish(goal_point);
+    // printf("x,y:%f,%f\n",local_goal.pose.position.x,local_goal.pose.position.y);
+    // printf("max,min:%f,%f\n", v2_max,v2_min);
+
+    if(max_speed <= v2_max) v2_max = max_speed;
+    if(min_speed >= v2_min) v2_min = min_speed;
+
+    tf::Quaternion quat(estimated_pose.pose.orientation.x,estimated_pose.pose.orientation.y,estimated_pose.pose.orientation.z,estimated_pose.pose.orientation.w);
     tf::Matrix3x3(quat).getRPY(roll, pitch, yaw);
-    conversion_theta = -1* float(yaw-M_PI/2);
+    theta = float(yaw);
 
-   /* float x = local_goal.pose.position.x - pose.pose.position.x;
-    float y = fabs(local_goal.pose.position.y - pose.pose.position.y);
+    old_angle = now_angle;
+    // now_angle = theta;
+    now_angle = 0;
+    // printf("theta:%f\n",theta);
+    now_yawrate = (old_angle - now_angle) /dt;
+    omega2_max = now_yawrate + max_dyawrate * dt;
+    omega2_min = now_yawrate - max_dyawrate * dt;
 
-    if(x < y)
-    {
-        goal[0] = local_goal.pose.position.x - pose.pose.position.x ;
-        goal[1] = fabs(local_goal.pose.position.y - pose.pose.position.y);
+    // printf("angle:%f\n", now_angle);
+    if(max_yawrate <= omega2_max) omega2_max = max_yawrate;
+    if(max_yawrate * -1 >= omega2_min) omega2_min = max_yawrate * -1;
+       // std::cout<<"v2_max,v2_min,v_reso:"<<v2_max<<","<<v2_min<<","<<v_reso<<std::endl;
+    max_evaluation = 0;
+    // min_obstacle = 20;
+    for(float a=v2_min; a<=v2_max; a+=v_reso) {//次の時刻における速度v2
+        // std::cout<<"omega2_max,omega2_min,omega_reso"<<omega2_max<<","<<omega2_min<<","<<omega_reso<<std::endl;
+        for(float b=omega2_min; b<=omega2_max; b+=omega_reso) {
+            // std::cout<<"loop2"<<std::endl;
+            velocity = a/v2_max;
+            min_obstacle = 14.14;
+            obstacle = 14.14;
+            predict_path.poses.clear();
+            for(float time=0; time<=predict_time;time+=0.01) {
+                x2 = a*time*std::sin(b*time);
+                y2 = a*time*std::cos(b*time);
+                geometry_msgs::PoseStamped path_point;
+                path_point.pose.position.x = x2;
+                path_point.pose.position.y = y2;
+                predict_path.poses.push_back(path_point);
+                x=(int)(x2/mass_reso)+column/2;
+                y=(int)(y2/mass_reso)+row/2;
+                // printf("map:%d\n",map[i][j]);
+                // if(x<0 || y<0) continue;
+                // printf("x,y:%d, %d\n", x,y);
+                if(map[x][y] != 0) {
+                    break;
+                }
+                if(time>=predict_time-0.01) {
+                    heading_theta = std::atan2(local_goal.pose.position.y,local_goal.pose.position.x) - std::atan2(y2,x2);
+                    heading = (std::cos(heading_theta)+1)/2;
+
+                        //heading = std::atan2(((float)y2-local_goal.pose.positon.y),((float)x2-local_goal.pose.position.x));
+                        // if(heading<0) heading *=-1;
+                }
+                    // printf("x2,y2:%d, %d\n", x2,y2);
+                for(int i=x-safe_space; i<x+safe_space; ++i) {
+                    for(int j=y-safe_space; j<y+safe_space; ++j){
+                        if(j<=row/2+3 || i==50 || j>=80) continue;
+                            // if(j<row/2) continue;
+                            // printf("i,j,x,y:%d,%d,%d,%d",i,j,x,y);
+                            // printf("map:%d\n",map[i][j]);
+                            // if(map[i][j] == 0) obstacle=20;
+                        if(map[i][j] == 100 || map[i][j] == -1) {
+                               // if(j<=y) continue;
+                               // printf("i,j,x,y,map:%d,%d,%d,%d,%d\n",i,j,x,y,map[i][j]);
+                            obstacle = std::sqrt((i-x)*(i-x)+(j-y)*(j-y));
+                                // if(obstacle==0) continue;
+                                // printf("obstacle:%f\n",obstacle);
+                        }
+                            // printf("obstacle:%f\n",obstacle);
+                        if(min_obstacle > obstacle) {
+                            min_obstacle = obstacle;
+                                // printf("obstacle:%f\n",obstacle);
+                                // printf("i,j,x,y:%d,%d,%d,%d\n",i,j,x,y);
+                        }
+                    }
+                }
+            // dist = min_obstacle/(safe_space*1.42);
+            // printf("min_obs:%f\n",min_obstacle);
+            }
+            predict_path.header.frame_id = "base_link";
+            pub_predict_path.publish(predict_path);
+            // printf("min_obs:%f\n",min_obstacle);
+            dist = min_obstacle/(safe_space*1.414);
+            // printf("dist:%f\n",dist);
+            // printf("velocity,heading,dist:%f,%f,%f\n", velocity,heading,dist);
+            evaluation = to_goal_gain * heading + robot_distance_gain * dist + speed_gain * velocity;
+            // evaluation = speed_gain * velocity + to_goal_gain * heading;
+            // evaluation = robot_distance_gain * dist;
+            // printf("eva:%f\n",evaluation);
+            if(max_evaluation < evaluation) {
+                max_evaluation = evaluation;
+                fin_v = a;
+                fin_omega = b;
+                // printf("max_evaluation:%f\n", max_evaluation);
+            }
+        }
     }
-    else
-    {
-        goal[1] = local_goal.pose.position.x - pose.pose.position.x ;
-        goal[0] = fabs(local_goal.pose.position.y - pose.pose.position.y);
+    v.cntl.linear.x = fin_v;
+    v.cntl.angular.z = fin_omega;
+    // printf("fin_v,fin_omega:%f,%f\n", fin_v,fin_omega);
+    nav_msgs::Path best_predict_path;
+    for(float time=0; time<=predict_time;time+=0.1) {
+        fin_x = fin_v*time*std::sin(fin_omega*time);
+        fin_y = fin_v*time*std::cos(fin_omega*time);
+        geometry_msgs::PoseStamped best_path_point;
+        best_path_point.pose.position.x = fin_x;
+        best_path_point.pose.position.y = fin_y;
+        best_predict_path.poses.push_back(best_path_point);
+        // std::cout<<"fin_x,fin_y: "<<fin_x<<","<<fin_y<<std::endl;
     }
-
-    std::cout << "pose x" << pose.pose.position.x << std::endl;
-    std::cout << "pose y" << pose.pose.position.y << std::endl;
-    std::cout << "goal.x" << goal[0] << std::endl;
-    std::cout << "goal.y" << goal[1] << std::endl;*/
-    dwa_control();
-    conversion_x = local_goal.pose.position.x - pose.pose.position.x;
-    conversion_y = local_goal.pose.position.y - pose.pose.position.y;
-
-    goal[0] =-1*( conversion_x*std::cos(conversion_theta) - conversion_y*std::sin(conversion_theta));
-
-    goal[1] = conversion_x*std::sin(conversion_theta)+ conversion_y*std::cos(conversion_theta);
-
-    if(sqrt((state.x - goal[0]*state.x)*(state.x - goal[0]) + (state.y - goal[1]) * (state.y - goal[1])) <= roomba_radius)
-    {
-        //最終地点
-        std::cout << "goal" << std::endl;
-    }
-    receive_local_map = false;
+    v.mode = 11;
+pub_twist.publish(v);
+best_predict_path.header.frame_id = "base_link";
+pub_best_predict_path.publish(best_predict_path);
 }
 
 void DWA::process()
@@ -300,7 +209,10 @@ void DWA::process()
     ros::Rate loop_rate(hz);
     while (ros::ok())
     {
+        //go_straight();
+        // std::cout<<"process start\n";
         if(receive_local_map) roomba();
+        // std::cout<<"roomba() end\n";
         ros::spinOnce();
         loop_rate.sleep();
     }
@@ -308,8 +220,12 @@ void DWA::process()
 
 int main(int argc, char** argv)
 {
+    // std::cout<<"DWA NODE\n";
     ros::init(argc, argv, "roomba");
+    // std::cout<<"dwa node\n";
     DWA DWA;
+    // std::cout<<"started dwa\n";
     DWA.process();
+    // wait(0.01);
     return 0;
 }

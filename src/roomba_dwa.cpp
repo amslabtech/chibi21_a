@@ -201,7 +201,7 @@ void DWA::dwa_control()
     std::cout << "final y"  << final_goal.pose.position.y << std::endl;
     float final_distance_x = pose.pose.position.x - local_goal.pose.position.x;
     float final_distance_y = pose.pose.position.y - local_goal.pose.position.y;
-    if(sqrt(final_distance_x*final_distance_x + final_distance_y*final_distance_y) <= 0.1)
+    if(sqrt(final_distance_x*final_distance_x + final_distance_y*final_distance_y) <= 0.3)
     {
         //最終地点
         std::cout << "goal" << std::endl;

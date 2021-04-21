@@ -183,7 +183,7 @@ void DWA::dwa_control()
     calc_dynamic_window(state);
     calc_final_input();
     roomba_500driver_meiji::RoombaCtrl cmd_vel;
-    if(wait < 50)
+    if(wait < 10)
     {
         cmd_vel.cntl.linear.x = 0.0;
         cmd_vel.mode = 11;
@@ -197,10 +197,11 @@ void DWA::dwa_control()
         cmd_vel.mode = 11;
         pub_twist.publish(cmd_vel);
     }
-
-    float final_distance_x = pose.pose.position.x - final_goal.pose.position.x;
-    float final_distance_y = pose.pose.position.y - final_goal.pose.position.y;
-    if(sqrt(final_distance_x*final_distance_x + final_distance_y*final_distance_y) <= roomba_radius)
+    std::cout << "final"  << final_goal.pose.position.x << std::endl;
+    std::cout << "final y"  << final_goal.pose.position.y << std::endl;
+    float final_distance_x = pose.pose.position.x - local_goal.pose.position.x;
+    float final_distance_y = pose.pose.position.y - local_goal.pose.position.y;
+    if(sqrt(final_distance_x*final_distance_x + final_distance_y*final_distance_y) <= 0.1)
     {
         //最終地点
         std::cout << "goal" << std::endl;

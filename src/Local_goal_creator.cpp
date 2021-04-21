@@ -37,6 +37,10 @@ void Local_Goal_Creator::set_the_next_goal(){
     count = 0;
     max_distance = 1e5;
 
+    geometry_msgs::PoseStamped temporay_goal;
+    temporay_goal.pose.position.x = 0.0;
+    temporay_goal.pose.position.y = 0.0;
+
     for(auto& point : global_path.poses)
     {
         float x = point.pose.position.x;
@@ -60,6 +64,7 @@ void Local_Goal_Creator::set_the_next_goal(){
     else
     {
         local_goal = global_path.poses[min_index+reselection_add_val];
+        final_goal = temporay_goal;
     }
 
 

@@ -30,10 +30,12 @@ class Local_Goal_Creator{
         ros::NodeHandle nh;
         ros::NodeHandle private_nh;
         ros::Publisher pub_local_goal;
+        ros::Publisher pub_final_goal;
         ros::Subscriber sub_global_path;
         ros::Subscriber sub_current_pose;
         nav_msgs::Path global_path;
         geometry_msgs::PoseStamped current_pose;
         geometry_msgs::PoseStamped local_goal;
+        geometry_msgs::PoseStamped final_goal;
 };
 #endif

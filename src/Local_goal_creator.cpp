@@ -7,6 +7,7 @@ Local_Goal_Creator::Local_Goal_Creator():private_nh("~"){
     sub_global_path = nh.subscribe("global_path",10,&Local_Goal_Creator::global_path_callback,this);
     sub_current_pose = nh.subscribe("estimated_pose",10,&Local_Goal_Creator::current_pose_callback,this);
     pub_local_goal = nh.advertise<geometry_msgs::PoseStamped>("local_goal",1);
+    pub_final_goal = nh.advertise<geometry_msgs::PoseStamped>("final_goal",1);
 }
 
 void Local_Goal_Creator::global_path_callback(const nav_msgs::Path::ConstPtr& msg){
@@ -54,6 +55,7 @@ void Local_Goal_Creator::set_the_next_goal(){
     {
         reach_final_goal = true;
         local_goal = global_path.poses[global_path.poses.size() - 1];
+        final_goal = global_path.poses[global_path.poses.size() - 1];
     }
     else
     {
@@ -77,6 +79,7 @@ void Local_Goal_Creator::set_the_next_goal(){
     {
         local_goal = global_path.poses[global_path.poses.size() - 1];
         pub_local_goal.publish(local_goal);
+        pub_final_goal.publish(final_goal);
     }
 }
 

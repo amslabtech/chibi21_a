@@ -22,6 +22,7 @@ DWA::DWA():private_nh("~")
     sub_local_goal = nh.subscribe("local_goal",10,&DWA::local_goal_callback,this);
     sub_pose = nh.subscribe("estimated_pose",10,&DWA::pose_callback,this);
     sub_local_map = nh.subscribe("local_map",10,&DWA::local_map_callback,this);//local_map
+    sub_final_goal = nh.subscribe("final_goal",10,&DWA::final_goal_callback,this);
 
     pub_twist = nh.advertise<roomba_500driver_meiji::RoombaCtrl>("/roomba/control",1);
     pub_predict_path = nh.advertise<nav_msgs::Path>("predict_path",1);//rvizにひげを配信するためのもの
@@ -33,6 +34,11 @@ DWA::DWA():private_nh("~")
 void DWA::local_goal_callback(const geometry_msgs::PoseStamped::ConstPtr &msg)
 {
     local_goal = *msg;
+}
+
+void DWA::final_goal_callback(const geometry_msgs::PoseStamped::ConstPtr &msg)
+{
+    final_goal = *msg;
 }
 
 void DWA::local_map_callback(const nav_msgs::OccupancyGrid::ConstPtr &msg)
@@ -191,6 +197,20 @@ void DWA::dwa_control()
         cmd_vel.mode = 11;
         pub_twist.publish(cmd_vel);
     }
+
+    float final_distance_x = pose.pose.position.x - final_goal.pose.position.x;
+    float final_distance_y = pose.pose.position.y - final_goal.pose.position.y;
+    if(sqrt(final_distance_x*final_distance_x + final_distance_y*final_distance_y) <= roomba_radius)
+    {
+        //最終地点
+        std::cout << "goal" << std::endl;
+        cmd_vel.cntl.linear.x = 0.0;
+        cmd_vel.cntl.angular.z = 0.0;
+        cmd_vel.mode = 11;
+        pub_twist.publish(cmd_vel);
+
+    }
+
     if(min_ob_cost == 1e10)
     {
         cmd_vel.cntl.linear.x = 0.0;
@@ -287,11 +307,6 @@ void DWA::roomba()
 
     goal[1] = conversion_x*std::sin(conversion_theta)+ conversion_y*std::cos(conversion_theta);
 
-    if(sqrt((state.x - goal[0]*state.x)*(state.x - goal[0]) + (state.y - goal[1]) * (state.y - goal[1])) <= roomba_radius)
-    {
-        //最終地点
-        std::cout << "goal" << std::endl;
-    }
     receive_local_map = false;
 }
 

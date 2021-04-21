@@ -43,6 +43,7 @@ private:
     void pose_callback(const geometry_msgs::PoseStamped::ConstPtr &msg);
     void local_map_callback(const nav_msgs::OccupancyGrid::ConstPtr &msg);
     void local_goal_callback(const geometry_msgs::PoseStamped::ConstPtr &msg);
+    void final_goal_callback(const geometry_msgs::PoseStamped::ConstPtr &msg);
     void set_map();
     void calc_dynamic_window(const Roomba_state &state);
     void calc_trajectory(const float &v ,const float &y);
@@ -107,6 +108,7 @@ private:
     ros::NodeHandle nh;
     ros::NodeHandle private_nh;
     ros::Subscriber sub_local_goal;
+    ros::Subscriber sub_final_goal;
     ros::Subscriber sub_local_map;
     ros::Subscriber sub_pose;
     ros::Publisher pub_twist;
@@ -117,6 +119,7 @@ private:
     nav_msgs::Path path;
     nav_msgs::OccupancyGrid local_map;
     geometry_msgs::PoseStamped local_goal;
+    geometry_msgs::PoseStamped final_goal;
     nav_msgs::Path best_predict_path;
     nav_msgs::Path predict_path;
     geometry_msgs::PoseStamped pose;

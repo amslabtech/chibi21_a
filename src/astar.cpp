@@ -73,37 +73,24 @@ void Astar::show_close_set(const int& x,const int& y)
 
 void Astar::set_landmark()
 {
-    landmark_point.x = 1798;
-    landmark_point.y = 2150;
+    landmark_point.x = 2130;
+    landmark_point.y = 2080;
     landmark.push_back(landmark_point);
-    landmark_point.x = 1800;
-    landmark_point.y =1880;
+    landmark_point.x = 2130;
+    landmark_point.y =2340;
     landmark.push_back(landmark_point);
-    landmark_point.x = 1815;
-    landmark_point.y = 1865;
+    landmark_point.x = 1850;
+    landmark_point.y = 2340;
     landmark.push_back(landmark_point);
-    landmark_point.x = 2065;
-    landmark_point.y = 1865;
+    landmark_point.x = 1850;
+    landmark_point.y = 1670;
     landmark.push_back(landmark_point);
-    landmark_point.x = 2080;
-    landmark_point.y = 1880;
+    landmark_point.x = 2130;
+    landmark_point.y = 1670;
     landmark.push_back(landmark_point);
-    landmark_point.x = 2080;
-    landmark_point.y = 2510;
+    landmark_point.x = 2130;
+    landmark_point.y = 2080;
     landmark.push_back(landmark_point);
-    landmark_point.x = 2045;
-    landmark_point.y = 2535;
-    landmark.push_back(landmark_point);
-    landmark_point.x = 1820;
-    landmark_point.y = 2535;
-    landmark.push_back(landmark_point);
-    landmark_point.x = 1800;
-    landmark_point.y = 2515;
-    landmark.push_back(landmark_point);
-    landmark_point.x = 1800;
-    landmark_point.y = 2100;
-    landmark.push_back(landmark_point);
-
 }
 
 float Astar::calc_heuristic(const int& x, const int& y)

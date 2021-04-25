@@ -1,0 +1,42 @@
+#Particleの数
+N: 10
+
+#初期位置・分散
+INIT_X: 0.0
+INIT_Y: 0.0
+INIT_YAW: 3.14
+INIT_X_COV: 0.5
+INIT_Y_COV: 0.5
+INIT_YAW_COV: 0.5
+
+#レーザのパラメータ
+#MAX_RANGE: 20
+#RANGE_STEP: 5
+
+#しきい値(分散)
+#X_COV_TH: 0.1
+#Y_COV_TH: 0.1
+#X_COV: 0.1
+#Y_COV: 0.1
+
+
+#動作ノイズ
+#ALPHA_1: 0.3
+#ALPHA_2: 0.3
+#ALPHA_3: 0.3
+#ALPHA_4: 0.3
+
+#MOVE_NOISE_1: 0.3
+#MOVE_NOISE_2: 0.3
+#MOVE_NOISE_3: 0.3
+#MOVE_NOISE_4: 0.3
+
+#リサンプリングパラメータ
+#P_COV: 0.3
+#ALPHA_SLOW: 0.001
+#ALPHA_FAST: 0.1
+
+#更新するかしないかのパラメータ
+#JUDGE_DISTANCE_VASLUE: 0.2
+#JUDGE_ANGLE_VALUE: 0.15
+

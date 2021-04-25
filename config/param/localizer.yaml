@@ -1,0 +1,45 @@
+#Particleの数
+N: 2000
+
+#初期位置・分散
+INIT_X: 5.0 # 5.0
+INIT_Y: 3.0 # 3.0
+INIT_YAW: 1.57
+INIT_X_COV: 0.5
+INIT_Y_COV: 0.5
+INIT_YAW_COV: 0.5
+
+#レーザのパラメータ
+MAX_RANGE: 25
+RANGE_STEP: 5
+
+#分散のしきい値
+X_COV_TH: 0.15
+Y_COV_TH: 0.15
+YAW_COV_TH: 0.10
+
+#動作ノイズ(ロボット固有の誤差パラメータ)
+ALPHA_1: 0.3
+ALPHA_2: 0.3
+ALPHA_3: 0.1
+ALPHA_4: 0.1
+
+#リサンプリングパラメータ
+ALPHA_SLOW: 0.001
+ALPHA_FAST: 0.1
+
+#混合分布のパラメータ
+HIT_COV: 1.0
+LAMBDA_SHORT: 0.1
+# --- Z_HIT + Z_SHORT + Z_MAX + Z_RAND = 1 ---
+Z_HIT: 0.95
+Z_SHORT: 0.1
+Z_MAX: 0.05
+Z_RAND: 0.05
+
+#更新するかしないかのパラメータ
+JUDGE_DISTANCE_VASLUE: 0.15
+JUDGE_ANGLE_VALUE: 0.15
+
+#Particleの選出割合
+SELECTION_RATIO: 0.2

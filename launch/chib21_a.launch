@@ -1,14 +1,67 @@
 <?xml version="1.0"?>
 <launch>
-   <node pkg = "chibi21_a" name="astar" type="astar" output="screen" >
+    <node pkg="roomba_500driver_meiji" name="roomba_dwa_node" type="main500"/>
+    <node pkg="urg_node" name="urg_node" type="urg_node">
+        <param name="serial_port" value="/dev/ttyACM0"/>
+    </node>
+
+   <node pkg = "chibi21_a" name="astar" type="astar" >
         <param name="hz" value="20" />
         <param name="wall_cost" value="1e+10" />
         <param name="wall_border" value="50" />
         <param name="wall_thickness" value="4" />
-        <param name="landmark_set_param" value="9" />
+        <param name="landmark_set_param" value="5" />
+    </node>
+
+        <!-- localizer -->
+    <node pkg = "chibi21_a" name="chibi21_a_amcl2" type="chibi21_a_amcl2" >
+        <param name="hz" value="10" type="int"/>
+        <param name="N" value="500" type="int"/>
+        <param name="INIT_X" value="6.0" type="double"/>
+        <param name="INIT_Y" value="8.0" type="double"/>
+        <param name="INIT_YAW" value="1.57" type="double"/>
+        <param name="INIT_X_COV" value="0.5" type="double"/>
+        <param name="INIT_Y_COV" value="0.5" type="double"/>
+        <param name="INIT_YAW_COV" value="0.3" type="double"/>
+        <param name="MOVE_DIST_COV" value="0.1" type="double"/>
+        <param name="MOVE_YAW_COV" value="0.03" type="double"/>
+        <param name="ANGLE_INC" value="5" type="int"/>
+        <param name="MAX_RANGE" value="10.0" type="double"/>
+        <param name="CHECK_INTERVAL" value="0.02" type="double"/>
+        <param name="M_WEIGHT" value="1.0" type="double"/>
+        <param name="M_COV" value="0.05" type="double"/>
+        <param name="ESS_LIMEN" value="0.9" type="double"/>
+        <param name="ALPHA_SLOW" value="0.1" type="double"/>
+        <param name="ALPHA_FAST" value="0.5" type="double"/>
+        <param name="SLOW_FAST_RATIO" value="0.4" type="double"/>
+    </node>
+    <node pkg="chibi21_a" name="roomba_dwa" type="roomba_dwa" >
+        <param name="hz" value="10" />
+        <param name="dt" value="1" />
+        <param name="to_goal_gain" value="1.5" />
+        <param name="robot_distance_gain" value="1.0" />
+        <param name="speed_gain" value="0.9"/>
+        <param name="predict_time" value="3.0"/>
+        <param name="v_reso" value="0.1"/>
+        <param name="omega_reso" value="0.08"/>
+        <param name="max_dyawrate" value="30" />
+        <param name="max_accel" value="0.3"/>
+        <param name="safemass_x" value="5" />
+        <param name="safemass_y" value="5" />
+    </node>
+    <node pkg="chibi21_a" name="local_map" type="local_map">
+        <param name="hz" value="10" />
+        <param name="world" value="5" />
+        <param name="allience" value="10" />
+        <param name="resolution" value="0.05" />
     </node>
     <node pkg="rviz" type="rviz" name="rviz" args="-d $(find chibi21_a)/config/simulate_a.rviz"/>
+    <node pkg="rviz" type="rviz" name="rviz2" args="-d $(find chibi21_a)/config/simulate_dwa.rviz"/>
     <arg name="map_file" default="$(find chibi21_a)/map/Dmap1.yaml" />
     <node name="map_server" pkg="map_server" type="map_server" args="$(arg map_file)" output="screen" />
+    <node pkg="chibi21_a" name="Local_goal_creator" type="Local_goal_creator" output="screen" >         <param name="hz" value="10" />
+         <param name="reselection_dis" value="1.0" />
+         <param name="reselection_add_val" value="50"/>
+   </node>
 
 </launch>

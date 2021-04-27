@@ -25,6 +25,7 @@ AMCL::AMCL():private_nh("~")
     private_nh.getParam("ESS_LIMEN",ESS_LIMEN);
     private_nh.getParam("ALPHA_SLOW",ALPHA_SLOW);
     private_nh.getParam("ALPHA_FAST",ALPHA_FAST);
+    private_nh.getParam("SLOW_FAST_RATIO",SLOW_FAST_RATIO);
 
     private_nh.param("hz",hz,{10});
 
@@ -70,7 +71,7 @@ void AMCL::map_callback(const nav_msgs::OccupancyGrid::ConstPtr &msg)
     for(int i = 0; i < N; i++)
     {
         Particle p(N);
-        p_init(p);
+        p_init(p,INIT_X,INIT_Y,INIT_YAW,INIT_X_COV,INIT_Y_COV,INIT_YAW_COV);
         poses.poses.push_back(p.pose.pose);
         init_particles.push_back(p);
     }
@@ -88,15 +89,15 @@ AMCL::Particle::Particle(int N)
 }
 
 //Particle 初期化
-void AMCL::p_init(AMCL::Particle &p)
+void AMCL::p_init(AMCL::Particle &p, double init_x, double init_y, double init_yaw, double init_x_cov, double init_y_cov, double init_yaw_cov)
 {
-    std::normal_distribution<> dist_x(INIT_X,INIT_X_COV);
+    std::normal_distribution<> dist_x(init_x,init_x_cov);
     p.pose.pose.position.x = dist_x(engine);
 
-    std::normal_distribution<> dist_y(INIT_Y,INIT_Y_COV);
+    std::normal_distribution<> dist_y(init_y,init_y_cov);
     p.pose.pose.position.y = dist_y(engine);
 
-    std::normal_distribution<> dist_yaw(INIT_YAW,INIT_YAW_COV);
+    std::normal_distribution<> dist_yaw(init_yaw,init_yaw_cov);
     quaternionTFToMsg(tf::createQuaternionFromYaw(dist_yaw(engine)),p.pose.pose.orientation);
 
     quaternionMsgToTF(p.pose.pose.orientation, p.init_orientation);
@@ -162,12 +163,31 @@ void AMCL::p_move(AMCL::Particle &p)
 
 void AMCL::p_measurement_update()
 {
+    double weight_sum = 0.0;
     for(int i = 0; i < N; i++)
     {
         p_calc_weight(particles[i]);
+
+        weight_sum += particles[i].weight;
+    }
+    double weight_ave = weight_sum / (double)N;
+
+    //adaptiveMCL 初回
+    if(weight_ave == 0.0 || std::isnan(weight_ave))
+    {
+        weight_ave = 1.0 / (double)N;
+        weight_slow = weight_ave;
+        weight_fast = weight_ave;
     }
 
-    // std::cout<<"weight="<<particles[0].weight<<std::endl;
+    //resampling()で使う
+    if(weight_slow == 0.0) weight_slow = weight_ave;
+    else weight_slow += ALPHA_SLOW * (weight_ave-weight_slow);
+
+    if(weight_fast == 0.0) weight_fast = weight_ave;
+    else weight_fast += ALPHA_FAST * (weight_ave-weight_fast);
+
+    std::cout<<"ave="<<weight_ave<<":slow="<<weight_slow<<":fast="<<weight_fast<<std::endl;
 
     // ROS_INFO("measurement_update");
 
@@ -263,12 +283,36 @@ bool AMCL::is_wall(double x, double y)
 
 void AMCL::resampling_process()
 {
-    if(calc_ess() < ESS_LIMEN*(double)N)
+    if((weight_fast/weight_slow) < SLOW_FAST_RATIO)
     {
-        resampling();
+        simple_reset();
+    }
+    else
+    {
+        if(calc_ess() < ESS_LIMEN*(double)N)
+        {
+            resampling();
+        }
     }
     // ROS_INFO("resampling process");
     // std::cout<<"ESS="<<calc_ess()<<std::endl;
+}
+
+void AMCL::simple_reset()
+{
+    std::vector<Particle> new_particles;
+    double new_x = estimated_pose.pose.position.x;
+    double new_y = estimated_pose.pose.position.y;
+    double new_yaw = tf::getYaw(estimated_pose.pose.orientation);
+
+    for(int i = 0; i < N; i++)
+    {
+        Particle p(N);
+        p_init(p,new_x,new_y,new_yaw,INIT_X_COV,INIT_Y_COV,INIT_YAW_COV);
+        new_particles.push_back(p);
+    }
+    particles = new_particles;
+    ROS_INFO("simple reset!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
 }
 
 double AMCL::calc_ess()
